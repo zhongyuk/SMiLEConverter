@@ -397,7 +397,7 @@ class ACGAN(GAN):
         self.resized_image_size = resized_image_size
         self.batch_size = batch_size
         
-        label_dict = ...
+        label_dict = celebA.create_label_dict(data_dir)
         labels = [label_dict[f] for f in celebA_dataset.train_images]
         tf_labels = tf.constant(labels)
         label_queue = tf.FIFOQueue(len(celebA_dataset.train_imamges),tf.int32, shapes=[[]])
