@@ -2,6 +2,7 @@ __author__ = 'charlie'
 import numpy as np
 import os, sys, inspect
 import random
+import pandas as pd
 from six.moves import cPickle as pickle
 from tensorflow.python.platform import gfile
 import glob
@@ -88,3 +89,31 @@ def create_image_lists(image_dir, testing_percentage=0.0, validation_percentage=
         'validation': validation_images,
     }
     return result
+
+def create_label_dict(data_dir, attrib_name='Smiling'):
+    pickle_filename = 'list_attr_celeb.'+attrib_name+'.pickle'
+    pickle_filepath = os.path.join(data_dir, pickle_filename)
+    if not os.path.exists(pickle_filepath):
+        attrib_filepath = os.path.join(data_dir, 'list_attr_celeba.txt')
+        if not os.path.exists(attrib_filepath):
+            raise ValueError("Attribute data not found")
+        print("Read attribute data...")
+        attrib_df = pd.read_csv(attrib_filepath, sep='\s+')
+        imgfns = attrib_df.index
+        img_dir = data_dir + 'img_align_celeba/'
+        def non_negative(num):
+            if num==-1:
+                return 0
+            elif num==1:
+                return num
+            else:
+                raise ValueError("unexpected value")
+        label_dict = {img_dir+fn : non_negative(attrib_df[attrib_name][fn]) for fn in imgfns}
+        print("Pickling label-image_filename dictiongary...")
+        with open(pickle_filepath, 'wb') as f:
+            pickle.dump(label_dict, f, pickle.HIGHEST_PROTOCOL)
+    else:
+        print("Found pickled label dict")
+        with open(pickle_filepath, 'rb') as f:
+            label_dict = pickle.load(f)
+    return label_dict

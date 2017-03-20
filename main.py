@@ -11,16 +11,17 @@ from models.GAN_models import *
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
 tf.flags.DEFINE_string("logs_dir", "logs/CelebA_GAN_logs/", "path to logs directory")
-tf.flags.DEFINE_string("data_dir", "Data_zoo/CelebA_faces/", "path to dataset")
+tf.flags.DEFINE_string("data_dir", "/Users/Zhongyu/Downloads/", "path to dataset")
 tf.flags.DEFINE_integer("z_dim", "100", "size of input vector to generator")
 tf.flags.DEFINE_float("learning_rate", "2e-4", "Learning rate for Adam Optimizer")
 tf.flags.DEFINE_float("optimizer_param", "0.5", "beta1 for Adam optimizer / decay for RMSProp")
 tf.flags.DEFINE_float("iterations", "1e5", "No. of iterations to train model")
 tf.flags.DEFINE_string("image_size", "108,64", "Size of actual images, Size of images to be generated at.")
-tf.flags.DEFINE_integer("model", "0", "Model to train. 0 - GAN, 1 - WassersteinGAN")
+tf.flags.DEFINE_integer("model", "0", "Model to train. 0 - GAN, 1 - WassersteinGAN, 2 - AuxiliaryConditoinalGAN")
 tf.flags.DEFINE_string("optimizer", "Adam", "Optimizer to use for training")
 tf.flags.DEFINE_integer("gen_dimension", "16", "dimension of first layer in generator")
 tf.flags.DEFINE_string("mode", "train", "train / visualize model")
+tf.flags.DEFINE_integer("num_cls", "2", "number of classes for ACGAN")
 
 
 def main(argv=None):
@@ -34,6 +35,8 @@ def main(argv=None):
     elif FLAGS.model == 1:
         model = WasserstienGAN(FLAGS.z_dim, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir,
                                clip_values=(-0.01, 0.01), critic_iterations=5)
+    elif FLAGS.model == 2:
+        model = ACGAN(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)
     else:
         raise ValueError("Unknown model identifier - FLAGS.model=%d" % FLAGS.model)
 

@@ -222,7 +222,7 @@ class GAN(object):
         self.saver = tf.train.Saver()
         self.summary_writer = tf.train.SummaryWriter(self.logs_dir, self.sess.graph)
 
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.initialize_all_variables(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
         if ckpt and ckpt.model_checkpoint_path:
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
@@ -387,3 +387,208 @@ class WasserstienGAN(GAN):
         finally:
             self.coord.request_stop()
             self.coord.join(self.threads)  # Wait for threads to finish.
+
+class ACGAN(GAN):
+    def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir):
+        self.num_cls = num_cls
+        celebA_dataset = celebA.read_dataset(data_dir)
+        self.z_dim = z_dim
+        self.crop_image_size = crop_image_size
+        self.resized_image_size = resized_image_size
+        self.batch_size = batch_size
+        
+        label_dict = ...
+        labels = [label_dict[f] for f in celebA_dataset.train_images]
+        tf_labels = tf.constant(labels)
+        label_queue = tf.FIFOQueue(len(celebA_dataset.train_imamges),tf.int32, shapes=[[]])
+        filename_queue = tf.train.string_input_producer(celebA_dataset.train_images, shuffle=False, capacity=len(celebA_dataset.train_images))
+        label_enqueue = label_queue.enqueue_many([tf_labels])
+        self.images, self.labels = self._read_input_queue(filename_queue, label_queue)
+        #GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
+
+        def _read_input(self, filename_queue, label_queue):
+            class DataRecord(object):
+                pass
+
+            reader = tf.WholeFileReader()
+            key, value = reader.read(filename_queue)
+            record = DataRecord()
+            decoded_image = tf.image.decode_jpeg(value,
+                                                 channels=3)  # Assumption:Color images are read and are to be generated
+
+            # decoded_image_4d = tf.expand_dims(decoded_image, 0)
+            # resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.target_image_size, self.target_image_size])
+            # record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
+
+            cropped_image = tf.cast(
+                tf.image.crop_to_bounding_box(decoded_image, 55, 35, self.crop_image_size, self.crop_image_size),
+                tf.float32)
+            decoded_image_4d = tf.expand_dims(cropped_image, 0)
+            resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.resized_image_size, self.resized_image_size])
+            record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
+            record.input_label = label_queue.dequeue()
+            return record
+
+    def _read_input_queue(self, filename_queue, label_queue):
+        print("Setting up image reader...")
+        read_input = self._read_input(filename_queue, label_queue)
+        num_preprocess_threads = 4
+        num_examples_per_epoch = 800
+        min_queue_examples = int(0.1 * num_examples_per_epoch)
+        print("Shuffling")
+        input_image, input_label = tf.train.batch([read_input.input_image, read_input.input_label],
+                                     batch_size=self.batch_size,
+                                     num_threads=num_preprocess_threads,
+                                     capacity=min_queue_examples + 2 * self.batch_size
+                                     )
+        input_image = utils.process_image(input_image, 127.5, 127.5)
+        input_label = tf.one_hot(input_label, self.num_cls)
+        return input_image, input_label
+
+    def _generator(self, z, input_labels, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
+        N = len(dims)
+        image_size = self.resized_image_size // (2 ** (N - 1))
+        with tf.variable_scope(scope_name) as scope:
+            W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
+            b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
+            h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
+            h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
+            h_ebd = activation(h_bnebd, name='h_bnebd')
+            utils.add_activation_summary(h_ebd)
+
+            # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
+            h_zebd = tf.mul(h_ebd, z)
+
+            W_z = utils.weight_variable([self.z_dim, dims[0] * image_size * image_size], name="W_z")
+            b_z = utils.bias_variable([dims[0] * image_size * image_size], name="b_z")
+            h_z = tf.matmul(h_zebd, W_z) + b_z
+            h_z = tf.reshape(h_z, [-1, image_size, image_size, dims[0]])
+            h_bnz = utils.batch_norm(h_z, dims[0], train_phase, scope="gen_bnz")
+            h = activation(h_bnz, name='h_z')
+            utils.add_activation_summary(h)
+
+            for index in range(N - 2):
+                image_size *= 2
+                W = utils.weight_variable([4, 4, dims[index + 1], dims[index]], name="W_%d" % index)
+                b = utils.bias_variable([dims[index + 1]], name="b_%d" % index)
+                deconv_shape = tf.pack([tf.shape(h)[0], image_size, image_size, dims[index + 1]])
+                h_conv_t = utils.conv2d_transpose_strided(h, W, b, output_shape=deconv_shape)
+                h_bn = utils.batch_norm(h_conv_t, dims[index + 1], train_phase, scope="gen_bn%d" % index)
+                h = activation(h_bn, name='h_%d' % index)
+                utils.add_activation_summary(h)
+
+            image_size *= 2
+            W_pred = utils.weight_variable([4, 4, dims[-1], dims[-2]], name="W_pred")
+            b_pred = utils.bias_variable([dims[-1]], name="b_pred")
+            deconv_shape = tf.pack([tf.shape(h)[0], image_size, image_size, dims[-1]])
+            h_conv_t = utils.conv2d_transpose_strided(h, W_pred, b_pred, output_shape=deconv_shape)
+            pred_image = tf.nn.tanh(h_conv_t, name='pred_image')
+            utils.add_activation_summary(pred_image)
+
+        return pred_image
+
+    def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name="discriminator", scope_reuse=False):
+        N = len(dims)
+        with tf.variable_scope(scope_name) as scope:
+            if scope_reuse:
+                scope.reuse_variables()
+            h = input_images
+            skip_bn = True  # First layer of discriminator skips batch norm
+            for index in range(N - 2):
+                W = utils.weight_variable([4, 4, dims[index], dims[index + 1]], name="W_%d" % index)
+                b = utils.bias_variable([dims[index + 1]], name="b_%d" % index)
+                h_conv = utils.conv2d_strided(h, W, b)
+                if skip_bn:
+                    h_bn = h_conv
+                    skip_bn = False
+                else:
+                    h_bn = utils.batch_norm(h_conv, dims[index + 1], train_phase, scope="disc_bn%d" % index)
+                h = activation(h_bn, name="h_%d" % index)
+                utils.add_activation_summary(h)
+
+            shape = h.get_shape().as_list()
+            image_size = self.resized_image_size // (2 ** (N - 2))  # dims has input dim and output dim
+            h_reshaped = tf.reshape(h, [self.batch_size, image_size * image_size * shape[3]])
+
+            W_pred_src = utils.weight_variable([image_size * image_size * shape[3], dims[-1]], name="W_pred_src")
+            b_pred_src = utils.bias_variable([dims[-1]], name="b_pred_src")
+            h_pred_src = tf.matmul(h_reshaped, W_pred_src) + b_pred_src
+
+            W_pred_cls = utils.weight_variable([image_size * image_size * shape[3], self.num_cls], name="W_pred_cls")
+            b_pred_cls = utils.bias_variable([self.num_cls], name='b_pred_cls')
+            h_pred_cls = tf.matmul(h_reshaped, W_pred_cls) + b_pred_cls
+
+        return tf.nn.sigmoid(h_pred_src), tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
+
+    def _gen_loss(self, logits_src_real, logits_src_fake, 
+                  logits_cls_real, logits_cls_fake, 
+                  feature_src_real, feature_src_fake, 
+                  input_labels, use_features=False):
+        discriminator_loss_src_real = self._cross_entropy_loss(logits_src_real, tf.ones_like(logits_real), name='disc_loss_src_real')
+        discriminator_loss_src_fake = self._cross_entropy_loss(logits_src_fake, tf.zeros_like(logits_fake), name='disc_loss_src_fake')
+        discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
+        discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
+        discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
+        self.discriminator_loss = discriminator_loss_src_real + discriminator_loss_src_fake + discriminator_loss_cls
+
+        gen_loss_disc = self._cross_entropy_loss(logits_src_fake, tf.ones_like(logits_src_fake), name="gen_disc_loss")
+        if use_features:
+            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
+        else:
+            gen_loss_features = 0
+        self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
+
+        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
+        tf.scalar_summary("Generator_loss", self.gen_loss)
+
+    def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,
+                       optimizer_param=0.9, improved_gan_loss=True):
+        print("Setting up model...")
+        self._setup_placeholder()
+        tf.histogram_summary("z", self.z_vec)
+        self.gen_images = self._generator(self.z_vec, self.labels, generator_dims, self.train_phase, scope_name="generator")
+
+        tf.image_summary("image_real", self.images, max_images=2)
+        tf.image_summary("image_generated", self.gen_images, max_images=2)
+
+        def leaky_relu(x, name="leaky_relu"):
+            return utils.leaky_relu(x, alpha=0.2, name=name)
+        
+        disc_src_real_prob, disc_cls_real_prob, logits_src_real, logits_cls_real, feature_real = self._discriminator(self.images, self.labels, discriminator_dims,
+                                                                                                 self.train_phase,
+                                                                                                 activation=leaky_relu,
+                                                                                                 scope_name="discriminator",
+                                                                                                 scope_reuse=False)
+
+        disc_src_fake_prob, disc_cls_fake_prob, logits_src_fake, logits_cls_fake, feature_fake = self._discriminator(self.gen_images, self.labels, discriminator_dims,
+                                                                                                 self.train_phase,
+                                                                                                 activation=leaky_relu,
+                                                                                                 scope_name="discriminator",
+                                                                                                 scope_reuse=True)
+
+        # utils.add_activation_summary(tf.identity(discriminator_real_prob, name='disc_real_prob'))
+        # utils.add_activation_summary(tf.identity(discriminator_fake_prob, name='disc_fake_prob'))
+
+        # Loss calculation
+        self._gan_loss(logits_src_real, logits_src_fake, 
+                       logits_cls_real, logits_cls_fake, 
+                       feature_real, feature_fake,
+                       self.labels, use_features=improved_gan_loss)
+
+        train_variables = tf.trainable_variables()
+
+        for v in train_variables:
+            # print (v.op.name)
+            utils.add_to_regularization_and_summary(var=v)
+
+        self.generator_variables = [v for v in train_variables if v.name.startswith("generator")]
+        # print(map(lambda x: x.op.name, generator_variables))
+        self.discriminator_variables = [v for v in train_variables if v.name.startswith("discriminator")]
+        # print(map(lambda x: x.op.name, discriminator_variables))
+
+        optim = self._get_optimizer(optimizer, learning_rate, optimizer_param)
+
+        self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
+        self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
+
+
