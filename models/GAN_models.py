@@ -452,8 +452,8 @@ class ACGAN(GAN):
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
             b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
             h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
-            h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
-            h_ebd = activation(h_bnebd, name='h_bnebd')
+            #h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
+            h_ebd = activation(h_ebd, name='h_ebd')
             utils.add_activation_summary(h_ebd)
 
             # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
@@ -520,12 +520,12 @@ class ACGAN(GAN):
 
         return tf.nn.sigmoid(h_pred_src), tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
 
-    def _gen_loss(self, logits_src_real, logits_src_fake, 
+    def _gan_loss(self, logits_src_real, logits_src_fake, 
                   logits_cls_real, logits_cls_fake, 
                   feature_src_real, feature_src_fake, 
                   input_labels, use_features=False):
-        discriminator_loss_src_real = self._cross_entropy_loss(logits_src_real, tf.ones_like(logits_real), name='disc_loss_src_real')
-        discriminator_loss_src_fake = self._cross_entropy_loss(logits_src_fake, tf.zeros_like(logits_fake), name='disc_loss_src_fake')
+        discriminator_loss_src_real = self._cross_entropy_loss(logits_src_real, tf.ones_like(logits_src_real), name='disc_loss_src_real')
+        discriminator_loss_src_fake = self._cross_entropy_loss(logits_src_fake, tf.zeros_like(logits_src_fake), name='disc_loss_src_fake')
         discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
         discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
         discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
@@ -554,13 +554,13 @@ class ACGAN(GAN):
         def leaky_relu(x, name="leaky_relu"):
             return utils.leaky_relu(x, alpha=0.2, name=name)
         
-        disc_src_real_prob, disc_cls_real_prob, logits_src_real, logits_cls_real, feature_real = self._discriminator(self.images, self.labels, discriminator_dims,
+        disc_src_real_prob, disc_cls_real_prob, logits_src_real, logits_cls_real, feature_real = self._discriminator(self.images, discriminator_dims,
                                                                                                  self.train_phase,
                                                                                                  activation=leaky_relu,
                                                                                                  scope_name="discriminator",
                                                                                                  scope_reuse=False)
 
-        disc_src_fake_prob, disc_cls_fake_prob, logits_src_fake, logits_cls_fake, feature_fake = self._discriminator(self.gen_images, self.labels, discriminator_dims,
+        disc_src_fake_prob, disc_cls_fake_prob, logits_src_fake, logits_cls_fake, feature_fake = self._discriminator(self.gen_images, discriminator_dims,
                                                                                                  self.train_phase,
                                                                                                  activation=leaky_relu,
                                                                                                  scope_name="discriminator",
