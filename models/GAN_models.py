@@ -400,34 +400,34 @@ class ACGAN(GAN):
         label_dict = celebA.create_label_dict(data_dir)
         labels = [label_dict[f] for f in celebA_dataset.train_images]
         tf_labels = tf.constant(labels)
-        label_queue = tf.FIFOQueue(len(celebA_dataset.train_imamges),tf.int32, shapes=[[]])
+        label_queue = tf.FIFOQueue(len(celebA_dataset.train_images),tf.int32, shapes=[[]])
         filename_queue = tf.train.string_input_producer(celebA_dataset.train_images, shuffle=False, capacity=len(celebA_dataset.train_images))
         label_enqueue = label_queue.enqueue_many([tf_labels])
         self.images, self.labels = self._read_input_queue(filename_queue, label_queue)
         #GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
 
-        def _read_input(self, filename_queue, label_queue):
-            class DataRecord(object):
-                pass
+    def _read_input(self, filename_queue, label_queue):
+        class DataRecord(object):
+            pass
 
-            reader = tf.WholeFileReader()
-            key, value = reader.read(filename_queue)
-            record = DataRecord()
-            decoded_image = tf.image.decode_jpeg(value,
-                                                 channels=3)  # Assumption:Color images are read and are to be generated
+        reader = tf.WholeFileReader()
+        key, value = reader.read(filename_queue)
+        record = DataRecord()
+        decoded_image = tf.image.decode_jpeg(value,
+                                             channels=3)  # Assumption:Color images are read and are to be generated
 
-            # decoded_image_4d = tf.expand_dims(decoded_image, 0)
-            # resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.target_image_size, self.target_image_size])
-            # record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
+        # decoded_image_4d = tf.expand_dims(decoded_image, 0)
+        # resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.target_image_size, self.target_image_size])
+        # record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
 
-            cropped_image = tf.cast(
-                tf.image.crop_to_bounding_box(decoded_image, 55, 35, self.crop_image_size, self.crop_image_size),
-                tf.float32)
-            decoded_image_4d = tf.expand_dims(cropped_image, 0)
-            resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.resized_image_size, self.resized_image_size])
-            record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
-            record.input_label = label_queue.dequeue()
-            return record
+        cropped_image = tf.cast(
+            tf.image.crop_to_bounding_box(decoded_image, 55, 35, self.crop_image_size, self.crop_image_size),
+            tf.float32)
+        decoded_image_4d = tf.expand_dims(cropped_image, 0)
+        resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.resized_image_size, self.resized_image_size])
+        record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
+        record.input_label = label_queue.dequeue()
+        return record
 
     def _read_input_queue(self, filename_queue, label_queue):
         print("Setting up image reader...")
