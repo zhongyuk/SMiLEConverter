@@ -234,14 +234,18 @@ class GAN(object):
         try:
             print("Training model...")
             for itr in xrange(1, max_iterations):
-                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+       		print(itr)         
+		batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
                 feed_dict = {self.z_vec: batch_z, self.train_phase: True}
 
+		print("run discriminator_train_op")
                 self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
-                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+                print("run generator_train_op") 
+		self.sess.run(self.generator_train_op, feed_dict=feed_dict)
 
                 if itr % 10 == 0:
-                    g_loss_val, d_loss_val, summary_str = self.sess.run(
+                    print("eval g_loss and d_loss") 
+		    g_loss_val, d_loss_val, summary_str = self.sess.run(
                         [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
                     print("Step: %d, generator loss: %g, discriminator_loss: %g" % (itr, g_loss_val, d_loss_val))
                     self.summary_writer.add_summary(summary_str, itr)
