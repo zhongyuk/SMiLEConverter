@@ -217,7 +217,8 @@ class GAN(object):
     def initialize_network(self, logs_dir):
         print("Initializing network...")
         self.logs_dir = logs_dir
-        self.sess = tf.Session()
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.75)
+        self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.merge_all_summaries()
         self.saver = tf.train.Saver()
         self.summary_writer = tf.train.SummaryWriter(self.logs_dir, self.sess.graph)
@@ -589,37 +590,20 @@ class ACGAN(GAN):
 
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
-    '''
-    def train_model(self, max_iterations):
-        try:
-            print("Training model...")
-            start_time = time.time()
-            for itr in xrange(1, max_iterations):
-                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
-                feed_dict = {self.z_vec: batch_z, self.train_phase: True}
 
-                self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
-                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+    def visualize_model(self):
+        print("Sampling images from model...")
+        batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+        feed_dict = {self.z_vec: batch_z, self.train_phase: False}
 
-                if itr % 200 == 0:
-                    stop_time = time.time()
-                    duration = (stop_time - start_time) / 200.
-                    start_time = time.time()
-                    g_loss_val, d_loss_val, summary_str = self.sess.run(
-                        [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
-                    print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
-                    self.summary_writer.add_summary(summary_str, itr)
-
-                if itr % 2000 == 0:
-                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
-
-        except tf.errors.OutOfRangeError:
-            print('Done training -- epoch limit reached')
-        except KeyboardInterrupt:
-            print("Ending Training...")
-        finally:
-            self.coord.request_stop()
-            self.coord.join(self.threads)  # Wait for threads to finish.
-    '''
+        input_label = tf.one_hot(input_label, self.num_cls)
+        for cls in range(self.num_cls):
+            labels = cls * tf.ones(shape=self.batch_size)
+            self.labels = tf.one_hot(labels, self.num_cls)
+            images = self.sess.run(self.gen_images, feed_dict=feed_dict)
+            images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
+            shape = [4, self.batch_size // 4]
+            save_img_fn = "generated_cls"+str(cls)+".png"
+            utils.save_imshow_grid(images, self.logs_dir, save_img_fn, shape=shape)
 
 
