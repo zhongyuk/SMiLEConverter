@@ -91,6 +91,7 @@ def create_image_lists(image_dir, testing_percentage=0.0, validation_percentage=
     return result
 
 def create_label_dict(data_dir, attrib_name='Smiling'):
+    __author__ = 'zhongyu kuang'
     pickle_filename = 'list_attr_celeb.'+attrib_name+'.pickle'
     pickle_filepath = os.path.join(data_dir, pickle_filename)
     if not os.path.exists(pickle_filepath):

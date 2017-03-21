@@ -233,6 +233,7 @@ class GAN(object):
     def train_model(self, max_iterations):
         try:
             print("Training model...")
+            start_time = time.time()
             for itr in xrange(1, max_iterations):
                 batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
                 feed_dict = {self.z_vec: batch_z, self.train_phase: True}
@@ -240,10 +241,13 @@ class GAN(object):
                 self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
                 self.sess.run(self.generator_train_op, feed_dict=feed_dict)
 
-                if itr % 10 == 0:
+                if itr % 200 == 0:
+                    stop_time = time.time()
+                    duration = (stop_time - start_time) / 200.
+                    start_time = time.time()
                     g_loss_val, d_loss_val, summary_str = self.sess.run(
                         [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
-                    print("Step: %d, generator loss: %g, discriminator_loss: %g" % (itr, g_loss_val, d_loss_val))
+                    print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
                     self.summary_writer.add_summary(summary_str, itr)
 
                 if itr % 2000 == 0:
@@ -389,6 +393,7 @@ class WasserstienGAN(GAN):
             self.coord.join(self.threads)  # Wait for threads to finish.
 
 class ACGAN(GAN):
+    __author__ = 'zhongyu kuang'
     def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir):
         self.num_cls = num_cls
         celebA_dataset = celebA.read_dataset(data_dir)
@@ -398,40 +403,34 @@ class ACGAN(GAN):
         self.batch_size = batch_size
         
         label_dict = celebA.create_label_dict(data_dir)
-        labels = [label_dict[f] for f in celebA_dataset.train_images]
-        tf_labels = tf.constant(labels)
-        label_queue = tf.FIFOQueue(len(celebA_dataset.train_images),tf.int32, shapes=[[]])
-        filename_queue = tf.train.string_input_producer(celebA_dataset.train_images, shuffle=False, capacity=len(celebA_dataset.train_images))
-        self.label_enqueue = label_queue.enqueue_many([tf_labels])
-        self.images, self.labels = self._read_input_queue(filename_queue, label_queue)
+        imgfn_list = label_dict.keys()
+        label_list = [label_dict[imgfn] for imgfn in imgfn_list]
+
+        images = tf.convert_to_tensor(imgfn_list)
+        labels = tf.convert_to_tensor(label_list, dtype=np.int32)
+        input_queue = tf.train.slice_input_producer([images, labels], shuffle=True)
+        self.images, self.labels = self._read_input_queue(input_queue)
         #GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
 
-    def _read_input(self, filename_queue, label_queue):
+    def _read_input(self, queue):
         class DataRecord(object):
             pass
-
-        reader = tf.WholeFileReader()
-        key, value = reader.read(filename_queue)
+        label = queue[1]
+        image = tf.read_file(queue[0])
         record = DataRecord()
-        decoded_image = tf.image.decode_jpeg(value,
-                                             channels=3)  # Assumption:Color images are read and are to be generated
-
-        # decoded_image_4d = tf.expand_dims(decoded_image, 0)
-        # resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.target_image_size, self.target_image_size])
-        # record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
-
+        decoded_image = tf.image.decode_jpeg(image, channels=3)
         cropped_image = tf.cast(
             tf.image.crop_to_bounding_box(decoded_image, 55, 35, self.crop_image_size, self.crop_image_size),
             tf.float32)
         decoded_image_4d = tf.expand_dims(cropped_image, 0)
         resized_image = tf.image.resize_bilinear(decoded_image_4d, [self.resized_image_size, self.resized_image_size])
         record.input_image = tf.squeeze(resized_image, squeeze_dims=[0])
-        record.input_label = label_queue.dequeue()
+        record.input_label = label
         return record
 
-    def _read_input_queue(self, filename_queue, label_queue):
+    def _read_input_queue(self, input_queue):
         print("Setting up image reader...")
-        read_input = self._read_input(filename_queue, label_queue)
+        read_input = self._read_input(input_queue)
         num_preprocess_threads = 4
         num_examples_per_epoch = 800
         min_queue_examples = int(0.1 * num_examples_per_epoch)
@@ -590,12 +589,11 @@ class ACGAN(GAN):
 
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
-
+    '''
     def train_model(self, max_iterations):
         try:
             print("Training model...")
             start_time = time.time()
-            self.sess.run(self.label_enqueue)
             for itr in xrange(1, max_iterations):
                 batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
                 feed_dict = {self.z_vec: batch_z, self.train_phase: True}
@@ -605,7 +603,7 @@ class ACGAN(GAN):
 
                 if itr % 200 == 0:
                     stop_time = time.time()
-                    duration = (stop_time - start_time) / 10.
+                    duration = (stop_time - start_time) / 200.
                     start_time = time.time()
                     g_loss_val, d_loss_val, summary_str = self.sess.run(
                         [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
@@ -622,5 +620,6 @@ class ACGAN(GAN):
         finally:
             self.coord.request_stop()
             self.coord.join(self.threads)  # Wait for threads to finish.
+    '''
 
 
