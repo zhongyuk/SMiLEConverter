@@ -8,6 +8,8 @@ from six.moves import urllib
 import tarfile
 import zipfile
 from tqdm import trange
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
