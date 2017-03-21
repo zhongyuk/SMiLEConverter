@@ -11,7 +11,7 @@ from models.GAN_models import *
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
 tf.flags.DEFINE_string("logs_dir", "logs/CelebA_GAN_logs/", "path to logs directory")
-#tf.flags.DEFINE_string("data_dir", "/Users/Zhongyu/Downloads/", "path to dataset")
+#tf.flags.DEFINE_string("data_dir", "/Users/Zhongyu/Downloads/celebA/", "path to dataset")
 tf.flags.DEFINE_string("data_dir", "/home/paperspace/Downloads/", "path to dataset")
 tf.flags.DEFINE_integer("z_dim", "100", "size of input vector to generator")
 tf.flags.DEFINE_float("learning_rate", "2e-4", "Learning rate for Adam Optimizer")

@@ -274,12 +274,12 @@ class GAN(object):
 
 
 class WasserstienGAN(GAN):
-    def __init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir, clip_values=(-0.01, 0.01),
-                 critic_iterations=5):
+    def __init__(self, z_dim, crop_image_size, resized_image_size, batch_size, 
+                 data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
         self.critic_iterations = critic_iterations
         self.clip_values = clip_values
         GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
-
+    '''
     def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
@@ -310,9 +310,8 @@ class WasserstienGAN(GAN):
             utils.add_activation_summary(pred_image)
 
         return pred_image
-
-    def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name="discriminator",
-                       scope_reuse=False):
+    '''
+    def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name="discriminator", scope_reuse=False):
         N = len(dims)
         with tf.variable_scope(scope_name) as scope:
             if scope_reuse:
@@ -393,6 +392,7 @@ class WasserstienGAN(GAN):
             self.coord.request_stop()
             self.coord.join(self.threads)  # Wait for threads to finish.
 
+
 class ACGAN(GAN):
     __author__ = 'zhongyu kuang'
     def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir):
@@ -411,7 +411,6 @@ class ACGAN(GAN):
         labels = tf.convert_to_tensor(label_list, dtype=np.int32)
         input_queue = tf.train.slice_input_producer([images, labels], shuffle=True)
         self.images, self.labels = self._read_input_queue(input_queue)
-        #GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
 
     def _read_input(self, queue):
         class DataRecord(object):
@@ -520,10 +519,7 @@ class ACGAN(GAN):
 
         return tf.nn.sigmoid(h_pred_src), tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
 
-    def _gan_loss(self, logits_src_real, logits_src_fake, 
-                  logits_cls_real, logits_cls_fake, 
-                  feature_src_real, feature_src_fake, 
-                  input_labels, use_features=False):
+    def _gan_loss(self, logits_src_real, logits_src_fake, logits_cls_real, logits_cls_fake, feature_src_real, feature_src_fake, input_labels, use_features=False):
         discriminator_loss_src_real = self._cross_entropy_loss(logits_src_real, tf.ones_like(logits_src_real), name='disc_loss_src_real')
         discriminator_loss_src_fake = self._cross_entropy_loss(logits_src_fake, tf.zeros_like(logits_src_fake), name='disc_loss_src_fake')
         discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
@@ -541,8 +537,7 @@ class ACGAN(GAN):
         tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
         tf.scalar_summary("Generator_loss", self.gen_loss)
 
-    def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,
-                       optimizer_param=0.9, improved_gan_loss=True):
+    def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,optimizer_param=0.9, improved_gan_loss=True):
         print("Setting up model...")
         self._setup_placeholder()
         tf.histogram_summary("z", self.z_vec)
@@ -604,4 +599,112 @@ class ACGAN(GAN):
             save_img_fn = "generated_cls"+str(cls)+".png"
             utils.save_imshow_grid(images, self.logs_dir, save_img_fn, shape=shape)
 
+
+class WassertienACGAN(ACGAN):
+    __author__ = 'zhongyu kuang'
+    def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, 
+                 batch_size, data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
+        self.critic_iterations = critic_iterations
+        self.clip_values = clip_values
+        ACGAN.__init__(z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir)
+
+    def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name='discriminator', scope_reuse=False):
+        N = len(dims)
+        with tf.variable_scope(scope_name) as scope:
+            if scope_reuse:
+                scope.reuse_variables()
+            h = input_images
+            skip_bn = True  # First layer of discriminator skips batch norm
+            for index in range(N - 2):
+                W = utils.weight_variable([4, 4, dims[index], dims[index + 1]], name="W_%d" % index)
+                b = utils.bias_variable([dims[index + 1]], name="b_%d" % index)
+                h_conv = utils.conv2d_strided(h, W, b)
+                if skip_bn:
+                    h_bn = h_conv
+                    skip_bn = False
+                else:
+                    h_bn = utils.batch_norm(h_conv, dims[index + 1], train_phase, scope="disc_bn%d" % index)
+                h = activation(h_bn, name="h_%d" % index)
+                utils.add_activation_summary(h)
+
+            shape = h.get_shape().as_list()
+            image_size = self.resized_image_size // (2 ** (N - 2))  # dims has input dim and output dim
+            h_reshaped = tf.reshape(h, [self.batch_size, image_size * image_size * shape[3]])
+
+            W_pred_src = utils.weight_variable([image_size * image_size * shape[3], dims[-1]], name="W_pred_src")
+            b_pred_src = utils.bias_variable([dims[-1]], name="b_pred_src")
+            h_pred_src = tf.matmul(h_reshaped, W_pred_src) + b_pred_src
+
+            W_pred_cls = utils.weight_variable([image_size * image_size * shape[3], self.num_cls], name="W_pred_cls")
+            b_pred_cls = utils.bias_variable([self.num_cls], name='b_pred_cls')
+            h_pred_cls = tf.matmul(h_reshaped, W_pred_cls) + b_pred_cls
+
+        return None, tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
+
+    def _gan_loss(self, logits_src_real, logits_src_fake, logits_cls_real, logits_cls_fake, feature_src_real, feature_src_fake, input_labels, use_features=False):
+        discriminator_loss_src = tf.reduce_mean(logits_src_real - logits_src_fake)
+        discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
+        discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
+        discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
+        self.discriminator_loss = discriminator_loss_src + discriminator_loss_cls
+
+        gen_loss_disc = tf.reduce_mean(logits_src_fake)
+        if use_features:
+            gen_loss_features = tf.reuce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
+        else:
+            gen_loss_features = 0
+        self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
+
+        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
+        tf.scalar_summary("Generator_loss", self.gen_loss)
+
+    def train_model(self, max_iterations):
+        try:
+            print("Training Wasserstein ACGAN model...")
+            clip_discriminator_var_op = [var.assign(tf.clip_by_value(var, self.clip_values[0], self.clip_values[1])) for
+                                         var in self.discriminator_variables]
+
+            start_time = time.time()
+
+            def get_feed_dict(train_phase=True):
+                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+                feed_dict = {self.z_vec: batch_z, self.train_phase: train_phase}
+                return feed_dict
+
+            for itr in xrange(1, max_iterations):
+                if itr < 25 or itr % 500 == 0:
+                    critic_itrs = 25
+                else:
+                    critic_itrs = self.critic_iterations
+
+                for critic_itr in range(critic_itrs):
+                    self.sess.run(self.discriminator_train_op, feed_dict=get_feed_dict(True))
+                    self.sess.run(clip_discriminator_var_op)
+
+                feed_dict = get_feed_dict(True)
+                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+
+                if itr % 100 == 0:
+                    summary_str = self.sess.run(self.summary_op, feed_dict=feed_dict)
+                    self.summary_writer.add_summary(summary_str, itr)
+
+                if itr % 200 == 0:
+                    stop_time = time.time()
+                    duration = (stop_time - start_time) / 200.0
+                    start_time = stop_time
+                    g_loss_val, d_loss_val = self.sess.run([self.gen_loss, self.discriminator_loss],
+                                                           feed_dict=feed_dict)
+                    print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (
+                        duration, itr, g_loss_val, d_loss_val))
+
+                if itr % 5000 == 0:
+                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
+
+        except tf.errors.OutOfRangeError:
+            print('Done training -- epoch limit reached')
+        except KeyboardInterrupt:
+            print("Ending Training...")
+        finally:
+            self.coord.request_stop()
+            self.coord.join(self.threads)  # Wait for threads to finish.
 
