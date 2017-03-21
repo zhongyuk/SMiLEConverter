@@ -596,7 +596,7 @@ class ACGAN(GAN):
         batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
         for cls in range(self.num_cls):
-            labels = cls * tf.ones(shape=self.batch_size)
+            labels = cls * tf.ones(shape=self.batch_size, dtpye=tf.int32)
             self.labels = tf.one_hot(labels, self.num_cls)
             images = self.sess.run(self.gen_images, feed_dict=feed_dict)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
