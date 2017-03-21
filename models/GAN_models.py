@@ -597,16 +597,13 @@ class ACGAN(GAN):
             start_time = time.time()
             self.sess.run(self.label_enqueue)
             for itr in xrange(1, max_iterations):
-                print(itr)
                 batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
                 feed_dict = {self.z_vec: batch_z, self.train_phase: True}
 
-                print("run discriminator_train_op")
                 self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
-                print("run generator_train_op") 
                 self.sess.run(self.generator_train_op, feed_dict=feed_dict)
 
-                if itr % 10 == 0:
+                if itr % 200 == 0:
                     stop_time = time.time()
                     duration = (stop_time - start_time) / 10.
                     start_time = time.time()
