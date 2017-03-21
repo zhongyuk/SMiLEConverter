@@ -222,7 +222,7 @@ class GAN(object):
         self.saver = tf.train.Saver()
         self.summary_writer = tf.train.SummaryWriter(self.logs_dir, self.sess.graph)
 
-        self.sess.run(tf.initialize_all_variables(), feed_dict = {self.train_phase: True})
+        self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
         if ckpt and ckpt.model_checkpoint_path:
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
@@ -234,18 +234,14 @@ class GAN(object):
         try:
             print("Training model...")
             for itr in xrange(1, max_iterations):
-       		print(itr)         
-		batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
                 feed_dict = {self.z_vec: batch_z, self.train_phase: True}
 
-		print("run discriminator_train_op")
                 self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
-                print("run generator_train_op") 
-		self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
 
                 if itr % 10 == 0:
-                    print("eval g_loss and d_loss") 
-		    g_loss_val, d_loss_val, summary_str = self.sess.run(
+                    g_loss_val, d_loss_val, summary_str = self.sess.run(
                         [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
                     print("Step: %d, generator loss: %g, discriminator_loss: %g" % (itr, g_loss_val, d_loss_val))
                     self.summary_writer.add_summary(summary_str, itr)
@@ -406,7 +402,7 @@ class ACGAN(GAN):
         tf_labels = tf.constant(labels)
         label_queue = tf.FIFOQueue(len(celebA_dataset.train_images),tf.int32, shapes=[[]])
         filename_queue = tf.train.string_input_producer(celebA_dataset.train_images, shuffle=False, capacity=len(celebA_dataset.train_images))
-        label_enqueue = label_queue.enqueue_many([tf_labels])
+        self.label_enqueue = label_queue.enqueue_many([tf_labels])
         self.images, self.labels = self._read_input_queue(filename_queue, label_queue)
         #GAN.__init__(self, z_dim, crop_image_size, resized_image_size, batch_size, data_dir)
 
@@ -594,5 +590,40 @@ class ACGAN(GAN):
 
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
+
+    def train_model(self, max_iterations):
+        try:
+            print("Training model...")
+            start_time = time.time()
+            self.sess.run(self.label_enqueue)
+            for itr in xrange(1, max_iterations):
+                print(itr)
+                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+                feed_dict = {self.z_vec: batch_z, self.train_phase: True}
+
+                print("run discriminator_train_op")
+                self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
+                print("run generator_train_op") 
+                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+
+                if itr % 10 == 0:
+                    stop_time = time.time()
+                    duration = (stop_time - start_time) / 10.
+                    start_time = time.time()
+                    g_loss_val, d_loss_val, summary_str = self.sess.run(
+                        [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
+                    print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
+                    self.summary_writer.add_summary(summary_str, itr)
+
+                if itr % 2000 == 0:
+                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
+
+        except tf.errors.OutOfRangeError:
+            print('Done training -- epoch limit reached')
+        except KeyboardInterrupt:
+            print("Ending Training...")
+        finally:
+            self.coord.request_stop()
+            self.coord.join(self.threads)  # Wait for threads to finish.
 
 
