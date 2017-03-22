@@ -159,7 +159,7 @@ class GAN(object):
 
         gen_loss_disc = self._cross_entropy_loss(logits_fake, tf.ones_like(logits_fake), name="gen_disc_loss")
         if use_features:
-            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_real - feature_fake)) / (self.crop_image_size ** 2)
+            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_real - feature_fake)) #/ (self.crop_image_size ** 2)
         else:
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features
@@ -529,7 +529,7 @@ class ACGAN(GAN):
 
         gen_loss_disc = self._cross_entropy_loss(logits_src_fake, tf.ones_like(logits_src_fake), name="gen_disc_loss")
         if use_features:
-            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
+            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) #/ (self.crop_image_size ** 2)
         else:
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
@@ -588,10 +588,11 @@ class ACGAN(GAN):
 
     def visualize_model(self):
         print("Sampling images from model...")
-        batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+        num_sampls = self.batch_size/4
+        batch_z = np.random.uniform(-1.0, 1.0, size=[num_samples, self.z_dim]).astype(np.float32)
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
         for cls in range(self.num_cls):
-            labels = cls * tf.ones(shape=self.batch_size, dtpye=tf.int32)
+            labels = cls * tf.ones(shape=num_samples, dtype=tf.int32)
             self.labels = tf.one_hot(labels, self.num_cls)
             images = self.sess.run(self.gen_images, feed_dict=feed_dict)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
@@ -600,7 +601,7 @@ class ACGAN(GAN):
             utils.save_imshow_grid(images, self.logs_dir, save_img_fn, shape=shape)
 
 
-class WassertienACGAN(ACGAN):
+class WasserstienACGAN(ACGAN):
     __author__ = 'zhongyu kuang'
     def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, 
                  batch_size, data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
@@ -650,7 +651,7 @@ class WassertienACGAN(ACGAN):
 
         gen_loss_disc = tf.reduce_mean(logits_src_fake)
         if use_features:
-            gen_loss_features = tf.reuce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
+            gen_loss_features = tf.reuce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) #/ (self.crop_image_size ** 2)
         else:
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls

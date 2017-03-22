@@ -9,7 +9,7 @@ import tensorflow as tf
 from models.GAN_models import *
 
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
+tf.flags.DEFINE_integer("batch_size", "256", "batch size for training")
 tf.flags.DEFINE_string("logs_dir", "logs/CelebA_GAN_logs/", "path to logs directory")
 #tf.flags.DEFINE_string("data_dir", "/Users/Zhongyu/Downloads/celebA/", "path to dataset")
 tf.flags.DEFINE_string("data_dir", "/home/paperspace/Downloads/", "path to dataset")
@@ -39,6 +39,10 @@ def main(argv=None):
                                clip_values=(-0.01, 0.01), critic_iterations=5)
     elif FLAGS.model == 2:
         model = ACGAN(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)
+    elif FLAGS.model == 3:
+        model = WassersteinACGAN(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir,
+                               clip_values=(-0.01, 0.01), critic_iterations=5)
+
     else:
         raise ValueError("Unknown model identifier - FLAGS.model=%d" % FLAGS.model)
 
