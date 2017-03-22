@@ -35,7 +35,7 @@ def main(argv=None):
     if FLAGS.model == 0:
         model = GAN(FLAGS.z_dim, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)
     elif FLAGS.model == 1:
-        model = WasserstienGAN(FLAGS.z_dim, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir,
+        model = WassersteinGAN(FLAGS.z_dim, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir,
                                clip_values=(-0.01, 0.01), critic_iterations=5)
     elif FLAGS.model == 2:
         model = ACGAN(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)

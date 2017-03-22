@@ -273,7 +273,7 @@ class GAN(object):
         utils.save_imshow_grid(images, self.logs_dir, "generated.png", shape=shape)
 
 
-class WasserstienGAN(GAN):
+class WassersteinGAN(GAN):
     def __init__(self, z_dim, crop_image_size, resized_image_size, batch_size, 
                  data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
         self.critic_iterations = critic_iterations
@@ -601,7 +601,7 @@ class ACGAN(GAN):
             utils.save_imshow_grid(images, self.logs_dir, save_img_fn, shape=shape)
 
 
-class WasserstienACGAN(ACGAN):
+class WassersteinACGAN(ACGAN):
     __author__ = 'zhongyu kuang'
     def __init__(self, z_dim, num_cls, crop_image_size, resized_image_size, 
                  batch_size, data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
