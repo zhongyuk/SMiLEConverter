@@ -217,7 +217,7 @@ class GAN(object):
     def initialize_network(self, logs_dir):
         print("Initializing network...")
         self.logs_dir = logs_dir
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.75)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.50)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.merge_all_summaries()
         self.saver = tf.train.Saver()
@@ -607,7 +607,7 @@ class WassersteinACGAN(ACGAN):
                  batch_size, data_dir, clip_values=(-0.01, 0.01), critic_iterations=5):
         self.critic_iterations = critic_iterations
         self.clip_values = clip_values
-        ACGAN.__init__(z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir)
+        ACGAN.__init__(self, z_dim, num_cls, crop_image_size, resized_image_size, batch_size, data_dir)
 
     def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name='discriminator', scope_reuse=False):
         N = len(dims)
@@ -651,7 +651,7 @@ class WassersteinACGAN(ACGAN):
 
         gen_loss_disc = tf.reduce_mean(logits_src_fake)
         if use_features:
-            gen_loss_features = tf.reuce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) #/ (self.crop_image_size ** 2)
+            gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) #/ (self.crop_image_size ** 2)
         else:
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
