@@ -525,14 +525,14 @@ class ACGAN(GAN):
         discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
         discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
         discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
-        self.discriminator_loss = discriminator_loss_src_real + discriminator_loss_src_fake + 2.0 * discriminator_loss_cls
+        self.discriminator_loss = discriminator_loss_src_real + discriminator_loss_src_fake + discriminator_loss_cls
 
         gen_loss_disc = self._cross_entropy_loss(logits_src_fake, tf.ones_like(logits_src_fake), name="gen_disc_loss")
         if use_features:
             gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
         else:
             gen_loss_features = 0
-        self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + 2.0 * discriminator_loss_cls
+        self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
 
         tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
         tf.scalar_summary("Generator_loss", self.gen_loss)
