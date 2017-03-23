@@ -9,7 +9,7 @@ import tensorflow as tf
 from models.GAN_models import *
 
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_integer("batch_size", "256", "batch size for training")
+tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
 tf.flags.DEFINE_string("logs_dir", "logs/CelebA_GAN_logs/", "path to logs directory")
 #tf.flags.DEFINE_string("data_dir", "/Users/Zhongyu/Downloads/celebA/", "path to dataset")
 tf.flags.DEFINE_string("data_dir", "/home/paperspace/Downloads/", "path to dataset")
@@ -24,6 +24,7 @@ tf.flags.DEFINE_string("optimizer", "Adam", "Optimizer to use for training")
 tf.flags.DEFINE_integer("gen_dimension", "32", "dimension of first layer in generator") #defualt 16
 tf.flags.DEFINE_string("mode", "train", "train / visualize model")
 tf.flags.DEFINE_integer("num_cls", "2", "number of classes for ACGAN")
+tf.flags.DEFINE_boolean("feature_matching", "True", "use improved gan loss/feature matching or not")
 
 
 def main(argv=None):
@@ -47,7 +48,7 @@ def main(argv=None):
         raise ValueError("Unknown model identifier - FLAGS.model=%d" % FLAGS.model)
 
     model.create_network(generator_dims, discriminator_dims, FLAGS.optimizer, FLAGS.learning_rate,
-                         FLAGS.optimizer_param)
+                         FLAGS.optimizer_param, FLAGS.feature_matching)
 
     model.initialize_network(FLAGS.logs_dir)
 
