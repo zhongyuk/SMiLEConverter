@@ -451,8 +451,8 @@ class ACGAN(GAN):
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
             b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
             h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
-            #h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
-            h_ebd = activation(h_ebd, name='h_ebd')
+            h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
+            h_ebd = activation(h_bnebd, name='h_ebd')
             utils.add_activation_summary(h_ebd)
 
             # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
@@ -591,7 +591,7 @@ class ACGAN(GAN):
         batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
         for cls in range(self.num_cls):
-            labels = cls * tf.ones(shape=self.batch_sizes, dtype=tf.int32)
+            labels = cls * tf.ones(shape=self.batch_size, dtype=tf.int32)
             self.labels = tf.one_hot(labels, self.num_cls)
             images = self.sess.run(self.gen_images, feed_dict=feed_dict)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)

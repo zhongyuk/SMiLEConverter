@@ -133,7 +133,8 @@ def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.
                                , trainable=True)
         gamma = tf.get_variable(name='gamma', shape=[n_out], initializer=tf.random_normal_initializer(1.0, stddev),
                                 trainable=True)
-        batch_mean, batch_var = tf.nn.moments(x, [0, 1, 2], name='moments')
+        axes = range(len(x.get_shape().as_list())-1)
+        batch_mean, batch_var = tf.nn.moments(x, axes, name='moments')
         ema = tf.train.ExponentialMovingAverage(decay=decay)
 
         def mean_var_with_update():
