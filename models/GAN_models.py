@@ -226,7 +226,7 @@ class GAN(object):
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
         ckpt_filename_splits = ckpt.model_checkpoint_path.split('-')
-        ckpt_filename_splits[1] = str(iterations)
+        ckpt_filename_splits[1] = str(int(iterations))
         ckpt_filename = '-'.join(ckpt_filename_splits)
         if ckpt and ckpt_filename:
             print(ckpt_filename)
@@ -591,7 +591,7 @@ class ACGAN(GAN):
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
 
-    def visualize_model(self):
+    def visualize_model(self, iterations):
         print("Sampling images from model...")
         batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
@@ -601,7 +601,7 @@ class ACGAN(GAN):
             images = self.sess.run(self.gen_images, feed_dict=feed_dict)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
             shape = [4, 16]
-            save_img_fn = "generated_cls"+str(cls)+".png"
+            save_img_fn = "generated_cls"+str(cls)+"_"+str(int(iterations))+".png"
             utils.save_imshow_grid(images, self.logs_dir, save_img_fn, shape=shape)
 
 
