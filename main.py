@@ -55,7 +55,7 @@ def main(argv=None):
     if FLAGS.mode == "train":
         model.train_model(int(1 + FLAGS.iterations))
     elif FLAGS.mode == "visualize":
-        model.visualize_model(FLAGS.iterations)
+        model.visualize_model(FLAGS.iterations, generator_dims)
 
 
 if __name__ == "__main__":
