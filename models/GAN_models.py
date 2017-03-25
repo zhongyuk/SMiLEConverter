@@ -448,10 +448,10 @@ class ACGAN(GAN):
         input_label = tf.one_hot(input_label, self.num_cls)
         return input_image, input_label
 
-    def _generator(self, z, input_labels, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
+    def _generator(self, z, input_labels, dims, train_phase, activation=tf.nn.relu, scope_name="generator", scope_reuse=None):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
-        with tf.variable_scope(scope_name) as scope:
+        with tf.variable_scope(scope_name, reuse=scope_reuse) as scope:
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
             b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
             h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
@@ -598,7 +598,7 @@ class ACGAN(GAN):
         for cls in range(self.num_cls):
             labels = cls * tf.ones(shape=self.batch_size, dtype=tf.int32)
             labels_ohe = tf.one_hot(labels, self.num_cls)
-            gen_images = self._generator(self.z_vec, labels_ohe, generator_dims, self.train_phase, scope_name="generator")
+            gen_images = self._generator(self.z_vec, labels_ohe, generator_dims, self.train_phase, scope_name="generator", scope_reuse=True)
             images = self.sess.run(gen_images, feed_dict=feed_dict)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
             shape = [4, 16]
