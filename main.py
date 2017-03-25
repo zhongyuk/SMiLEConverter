@@ -50,7 +50,7 @@ def main(argv=None):
     model.create_network(generator_dims, discriminator_dims, FLAGS.optimizer, FLAGS.learning_rate,
                          FLAGS.optimizer_param, FLAGS.feature_matching)
 
-    model.initialize_network(FLAGS.logs_dir)
+    model.initialize_network(FLAGS.logs_dir, FLAGS.iterations)
 
     if FLAGS.mode == "train":
         model.train_model(int(1 + FLAGS.iterations))

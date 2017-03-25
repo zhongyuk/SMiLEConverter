@@ -214,7 +214,7 @@ class GAN(object):
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
 
-    def initialize_network(self, logs_dir):
+    def initialize_network(self, logs_dir, iterations):
         print("Initializing network...")
         self.logs_dir = logs_dir
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.50)
@@ -225,8 +225,12 @@ class GAN(object):
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
-        if ckpt and ckpt.model_checkpoint_path:
-            self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+        ckpt_filename_splits = ckpt.model_checkpoint_path.split('-')
+        ckpt_filename_splits[1] = str(iterations)
+        ckpt_filename = '-'.join(ckpt_filename_splits)
+        if ckpt and ckpt_filename:
+            print(ckpt_filename)
+            self.saver.restore(self.sess, ckpt_filename)
             print("Model restored...")
         self.coord = tf.train.Coordinator()
         self.threads = tf.train.start_queue_runners(self.sess, self.coord)
@@ -451,8 +455,9 @@ class ACGAN(GAN):
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
             b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
             h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
-            h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
-            h_ebd = activation(h_bnebd, name='h_ebd')
+            #h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
+            #h_ebd = activation(h_bnebd, name='h_bnebd')
+            h_ebd = activation(h_ebd, name='h_ebd')
             utils.add_activation_summary(h_ebd)
 
             # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
