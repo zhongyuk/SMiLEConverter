@@ -256,7 +256,7 @@ class GAN(object):
                     print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
                     self.summary_writer.add_summary(summary_str, itr)
 
-                if itr % 2000 == 0:
+                if itr % 5000 == 0:
                     self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
 
         except tf.errors.OutOfRangeError:
@@ -622,7 +622,7 @@ class ACGAN(GAN):
                     print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
                     self.summary_writer.add_summary(summary_str, itr)
 
-                if itr % 2000 == 0:
+                if itr %5000 == 0:
                     self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
 
         except tf.errors.OutOfRangeError:
