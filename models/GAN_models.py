@@ -225,13 +225,14 @@ class GAN(object):
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
-        ckpt_filename_splits = ckpt.model_checkpoint_path.split('-')
-        ckpt_filename_splits[1] = str(int(iterations))
-        ckpt_filename = '-'.join(ckpt_filename_splits)
-        if ckpt and ckpt_filename:
-            print(ckpt_filename)
-            self.saver.restore(self.sess, ckpt_filename)
-            print("Model restored...")
+        if ckpt:
+            ckpt_filename_splits = ckpt.model_checkpoint_path.split('-')
+            ckpt_filename_splits[1] = str(int(iterations))
+            ckpt_filename = '-'.join(ckpt_filename_splits)
+            if ckpt_filename:
+                print(ckpt_filename)
+                self.saver.restore(self.sess, ckpt_filename)
+                print("Model restored...")
         self.coord = tf.train.Coordinator()
         self.threads = tf.train.start_queue_runners(self.sess, self.coord)
 
