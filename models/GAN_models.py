@@ -459,7 +459,7 @@ class ACGAN(GAN):
         image_size = self.resized_image_size // (2 ** (N - 1))
 
         input_labels = tf.cond(train_phase, lambda: self.labels, 
-            lambda: tf.one_hot(self.class_num*tf.ones(shape=tf.batch_size, dtype=tf.int32), self.num_cls))
+            lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
 
         with tf.variable_scope(scope_name) as scope:
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
