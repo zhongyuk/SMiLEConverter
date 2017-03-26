@@ -457,7 +457,7 @@ class ACGAN(GAN):
     def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
-        
+
         input_labels = tf.cond(train_phase, lambda: self.labels, 
             lambda: tf.one_hot(self.class_num*tf.ones(shape=tf.batch_size, dtype=tf.int32), self.num_cls))
 
@@ -465,9 +465,9 @@ class ACGAN(GAN):
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
             b_ebd = utils.bias_variable([self.z_dim], name='b_ebd')
             h_ebd = tf.matmul(input_labels, W_ebd) + b_ebd
-            #h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
-            #h_ebd = activation(h_bnebd, name='h_bnebd')
-            h_ebd = activation(h_ebd, name='h_ebd')
+            h_bnebd = utils.batch_norm(h_ebd, self.z_dim, train_phase, scope='gen_bnebd')
+            h_ebd = activation(h_bnebd, name='h_bnebd')
+            #h_ebd = activation(h_ebd, name='h_ebd')
             utils.add_activation_summary(h_ebd)
 
             # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
@@ -499,7 +499,7 @@ class ACGAN(GAN):
             pred_image = tf.nn.tanh(h_conv_t, name='pred_image')
             utils.add_activation_summary(pred_image)
 
-        return pred_image, input_labels
+        return pred_image#, input_labels
 
     def _discriminator(self, input_images, dims, train_phase, activation=tf.nn.relu, scope_name="discriminator", scope_reuse=False):
         N = len(dims)
@@ -556,7 +556,7 @@ class ACGAN(GAN):
         print("Setting up model...")
         self._setup_placeholder()
         tf.histogram_summary("z", self.z_vec)
-        self.gen_images, self.input_labels = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
+        self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
         tf.image_summary("image_real", self.images, max_images=2)
         tf.image_summary("image_generated", self.gen_images, max_images=2)
@@ -601,14 +601,44 @@ class ACGAN(GAN):
         self.generator_train_op = self._train(self.gen_loss, self.generator_variables, optim)
         self.discriminator_train_op = self._train(self.discriminator_loss, self.discriminator_variables, optim)
 
+    def train_model(self, max_iterations):
+        try:
+            print("Training model...")
+            start_time = time.time()
+            for itr in xrange(1, max_iterations):
+                batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
+                feed_dict = {self.z_vec: batch_z, self.train_phase: True, self.class_num: -1}
+
+                self.sess.run(self.discriminator_train_op, feed_dict=feed_dict)
+                self.sess.run(self.generator_train_op, feed_dict=feed_dict)
+
+                if itr % 200 == 0:
+                    stop_time = time.time()
+                    duration = (stop_time - start_time) / 200.
+                    start_time = time.time()
+                    g_loss_val, d_loss_val, summary_str = self.sess.run(
+                        [self.gen_loss, self.discriminator_loss, self.summary_op], feed_dict=feed_dict)
+                    print("Time: %g/itr, Step: %d, generator loss: %g, discriminator_loss: %g" % (duration, itr, g_loss_val, d_loss_val))
+                    self.summary_writer.add_summary(summary_str, itr)
+
+                if itr % 2000 == 0:
+                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
+
+        except tf.errors.OutOfRangeError:
+            print('Done training -- epoch limit reached')
+        except KeyboardInterrupt:
+            print("Ending Training...")
+        finally:
+            self.coord.request_stop()
+            self.coord.join(self.threads)  # Wait for threads to finish.
     def visualize_model(self, iterations):
         print("Sampling images from model...")
         batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
         for cls in range(self.num_cls):
             feed_dict[self.class_num] = cls
-            images, labels = self.sess.run([self.gen_images, self.input_labels], feed_dict=feed_dict)
-            print(labels)
+            images = self.sess.run([self.gen_images, self.input_labels], feed_dict=feed_dict)
+            #print(labels)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
             shape = [4, 16]
             save_img_fn = "generated_cls"+str(cls)+"_"+str(int(iterations))+".png"
@@ -683,7 +713,7 @@ class WassersteinACGAN(ACGAN):
 
             def get_feed_dict(train_phase=True):
                 batch_z = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim]).astype(np.float32)
-                feed_dict = {self.z_vec: batch_z, self.train_phase: train_phase}
+                feed_dict = {self.z_vec: batch_z, self.train_phase: train_phase, self.class_num: -1}
                 return feed_dict
 
             for itr in xrange(1, max_iterations):
