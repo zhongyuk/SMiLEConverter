@@ -457,11 +457,9 @@ class ACGAN(GAN):
     def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
-        if train_phase:
-            input_labels = self.labels
-        else:
-            labels = self.class_num * tf.ones(shape=self.batch_size, dtype=tf.int32)
-            input_labels = tf.one_hot(labels, self.num_cls)
+        
+        input_labels = tf.cond(train_phase, lambda: self.labels, 
+            lambda: tf.one_hot(self.class_num*tf.ones(shape=tf.batch_size, dtype=tf.int32), self.num_cls))
 
         with tf.variable_scope(scope_name) as scope:
             W_ebd = utils.weight_variable([self.num_cls, self.z_dim], name='W_ebd')
