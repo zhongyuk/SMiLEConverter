@@ -637,7 +637,7 @@ class ACGAN(GAN):
         feed_dict = {self.z_vec: batch_z, self.train_phase: False}
         for cls in range(self.num_cls):
             feed_dict[self.class_num] = cls
-            images = self.sess.run([self.gen_images, self.input_labels], feed_dict=feed_dict)
+            images = self.sess.run(self.gen_images, feed_dict=feed_dict)
             #print(labels)
             images = utils.unprocess_image(images, 127.5, 127.5).astype(np.uint8)
             shape = [4, 16]
