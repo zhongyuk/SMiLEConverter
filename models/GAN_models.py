@@ -221,7 +221,7 @@ class GAN(object):
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
         self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
-        self.summary_writer = tf.train.SummaryWriter(self.logs_dir, self.sess.graph)
+        self.summary_writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
