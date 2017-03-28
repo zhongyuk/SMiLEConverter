@@ -171,7 +171,7 @@ class GAN(object):
                        optimizer_param=0.9, improved_gan_loss=True):
         print("Setting up model...")
         self._setup_placeholder()
-        tf.histogram_summary("z", self.z_vec)
+        tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
         tf.image_summary("image_real", self.images, max_images=2)
@@ -556,7 +556,7 @@ class ACGAN(GAN):
     def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,optimizer_param=0.9, improved_gan_loss=True):
         print("Setting up model...")
         self._setup_placeholder()
-        tf.histogram_summary("z", self.z_vec)
+        tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
         tf.image_summary("image_real", self.images, max_images=2)
