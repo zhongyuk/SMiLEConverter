@@ -127,7 +127,7 @@ class GAN(object):
 
     def _cross_entropy_loss(self, logits, labels, name="x_entropy"):
         xentropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, labels))
-        tf.scalar_summary(name, xentropy)
+        tf.summary.scalar(name, xentropy)
         return xentropy
 
     def _get_optimizer(self, optimizer_name, learning_rate, optimizer_param):
@@ -164,8 +164,8 @@ class GAN(object):
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features
 
-        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
-        tf.scalar_summary("Generator_loss", self.gen_loss)
+        tf.summary.scalar("Discriminator_loss", self.discriminator_loss)
+        tf.summary.scalar("Generator_loss", self.gen_loss)
 
     def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,
                        optimizer_param=0.9, improved_gan_loss=True):
@@ -174,8 +174,8 @@ class GAN(object):
         tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
-        tf.image_summary("image_real", self.images, max_images=2)
-        tf.image_summary("image_generated", self.gen_images, max_images=2)
+        tf.summary.image("image_real", self.images, max_images=2)
+        tf.summary.image("image_generated", self.gen_images, max_images=2)
 
         def leaky_relu(x, name="leaky_relu"):
             return utils.leaky_relu(x, alpha=0.2, name=name)
@@ -344,8 +344,8 @@ class WassersteinGAN(GAN):
         self.discriminator_loss = tf.reduce_mean(logits_real - logits_fake)
         self.gen_loss = tf.reduce_mean(logits_fake)
 
-        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
-        tf.scalar_summary("Generator_loss", self.gen_loss)
+        tf.summary.scalar("Discriminator_loss", self.discriminator_loss)
+        tf.summary.scalar("Generator_loss", self.gen_loss)
 
     def train_model(self, max_iterations):
         try:
@@ -550,8 +550,8 @@ class ACGAN(GAN):
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
 
-        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
-        tf.scalar_summary("Generator_loss", self.gen_loss)
+        tf.summary.scalar("Discriminator_loss", self.discriminator_loss)
+        tf.summary.scalar("Generator_loss", self.gen_loss)
 
     def create_network(self, generator_dims, discriminator_dims, optimizer="Adam", learning_rate=2e-4,optimizer_param=0.9, improved_gan_loss=True):
         print("Setting up model...")
@@ -559,8 +559,8 @@ class ACGAN(GAN):
         tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
-        tf.image_summary("image_real", self.images, max_images=2)
-        tf.image_summary("image_generated", self.gen_images, max_images=2)
+        tf.summary.image("image_real", self.images, max_images=2)
+        tf.summary.image("image_generated", self.gen_images, max_images=2)
 
         def leaky_relu(x, name="leaky_relu"):
             return utils.leaky_relu(x, alpha=0.2, name=name)
@@ -701,8 +701,8 @@ class WassersteinACGAN(ACGAN):
             gen_loss_features = 0
         self.gen_loss = gen_loss_disc + 0.1 * gen_loss_features + discriminator_loss_cls
 
-        tf.scalar_summary("Discriminator_loss", self.discriminator_loss)
-        tf.scalar_summary("Generator_loss", self.gen_loss)
+        tf.summary.scalar("Discriminator_loss", self.discriminator_loss)
+        tf.summary.scalar("Generator_loss", self.gen_loss)
 
     def train_model(self, max_iterations):
         try:

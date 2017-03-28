@@ -166,7 +166,7 @@ def add_to_regularization_and_summary(var):
 
 def add_activation_summary(var):
     tf.summary.histogram(var.op.name + "/activation", var)
-    tf.scalar_summary(var.op.name + "/sparsity", tf.nn.zero_fraction(var))
+    tf.summary.scalar(var.op.name + "/sparsity", tf.nn.zero_fraction(var))
 
 
 def add_gradient_summary(grad, var):
