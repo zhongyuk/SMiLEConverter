@@ -126,7 +126,7 @@ class GAN(object):
         return tf.nn.sigmoid(h_pred), h_pred, h
 
     def _cross_entropy_loss(self, logits, labels, name="x_entropy"):
-        xentropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits, labels))
+        xentropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels))
         tf.summary.scalar(name, xentropy)
         return xentropy
 
@@ -174,8 +174,8 @@ class GAN(object):
         tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
-        tf.summary.image("image_real", self.images, max_images=2)
-        tf.summary.image("image_generated", self.gen_images, max_images=2)
+        tf.summary.image("image_real", self.images, max_outputs=2)
+        tf.summary.image("image_generated", self.gen_images, max_outputs=2)
 
         def leaky_relu(x, name="leaky_relu"):
             return utils.leaky_relu(x, alpha=0.2, name=name)
@@ -471,8 +471,8 @@ class ACGAN(GAN):
             #h_ebd = activation(h_ebd, name='h_ebd')
             utils.add_activation_summary(h_ebd)
 
-            # h_zebd = tf.multiply(h_ebd, z) for TensorFlow 1.0
-            h_zebd = tf.mul(h_ebd, z)
+            h_zebd = tf.multiply(h_ebd, z) #for TensorFlow 1.0
+            #h_zebd = tf.mul(h_ebd, z)
 
             W_z = utils.weight_variable([self.z_dim, dims[0] * image_size * image_size], name="W_z")
             b_z = utils.bias_variable([dims[0] * image_size * image_size], name="b_z")
@@ -486,7 +486,7 @@ class ACGAN(GAN):
                 image_size *= 2
                 W = utils.weight_variable([4, 4, dims[index + 1], dims[index]], name="W_%d" % index)
                 b = utils.bias_variable([dims[index + 1]], name="b_%d" % index)
-                deconv_shape = tf.pack([tf.shape(h)[0], image_size, image_size, dims[index + 1]])
+                deconv_shape = tf.stack([tf.shape(h)[0], image_size, image_size, dims[index + 1]])
                 h_conv_t = utils.conv2d_transpose_strided(h, W, b, output_shape=deconv_shape)
                 h_bn = utils.batch_norm(h_conv_t, dims[index + 1], train_phase, scope="gen_bn%d" % index)
                 h = activation(h_bn, name='h_%d' % index)
@@ -495,7 +495,7 @@ class ACGAN(GAN):
             image_size *= 2
             W_pred = utils.weight_variable([4, 4, dims[-1], dims[-2]], name="W_pred")
             b_pred = utils.bias_variable([dims[-1]], name="b_pred")
-            deconv_shape = tf.pack([tf.shape(h)[0], image_size, image_size, dims[-1]])
+            deconv_shape = tf.stack([tf.shape(h)[0], image_size, image_size, dims[-1]])
             h_conv_t = utils.conv2d_transpose_strided(h, W_pred, b_pred, output_shape=deconv_shape)
             pred_image = tf.nn.tanh(h_conv_t, name='pred_image')
             utils.add_activation_summary(pred_image)
@@ -536,14 +536,14 @@ class ACGAN(GAN):
         return tf.nn.sigmoid(h_pred_src), tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
 
     def _gan_loss(self, logits_src_real, logits_src_fake, logits_cls_real, logits_cls_fake, feature_src_real, feature_src_fake, input_labels, use_features=False):
-        discriminator_loss_src_real = self._cross_entropy_loss(logits_src_real, tf.ones_like(logits_src_real), name='disc_loss_src_real')
-        discriminator_loss_src_fake = self._cross_entropy_loss(logits_src_fake, tf.zeros_like(logits_src_fake), name='disc_loss_src_fake')
-        discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
-        discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
+        discriminator_loss_src_real = self._cross_entropy_loss(logits=logits_src_real, labels=tf.ones_like(logits_src_real), name='disc_loss_src_real')
+        discriminator_loss_src_fake = self._cross_entropy_loss(logits=logits_src_fake, labels=tf.zeros_like(logits_src_fake), name='disc_loss_src_fake')
+        discriminator_loss_cls_real = self._cross_entropy_loss(logits=logits_cls_real, labels=input_labels, name='disc_loss_cls_real')
+        discriminator_loss_cls_fake = self._cross_entropy_loss(logits=logits_cls_fake, labels=input_labels, name='disc_loss_cls_fake')
         discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
         self.discriminator_loss = discriminator_loss_src_real + discriminator_loss_src_fake + discriminator_loss_cls
 
-        gen_loss_disc = self._cross_entropy_loss(logits_src_fake, tf.ones_like(logits_src_fake), name="gen_disc_loss")
+        gen_loss_disc = self._cross_entropy_loss(logits=logits_src_fake, labels=tf.ones_like(logits_src_fake), name="gen_disc_loss")
         if use_features:
             gen_loss_features = tf.reduce_mean(tf.nn.l2_loss(feature_src_real - feature_src_fake)) / (self.crop_image_size ** 2)
         else:
@@ -559,8 +559,8 @@ class ACGAN(GAN):
         tf.summary.histogram("z", self.z_vec)
         self.gen_images = self._generator(self.z_vec, generator_dims, self.train_phase, scope_name="generator")
 
-        tf.summary.image("image_real", self.images, max_images=2)
-        tf.summary.image("image_generated", self.gen_images, max_images=2)
+        tf.summary.image("image_real", self.images, max_outputs=4)
+        tf.summary.image("image_generated", self.gen_images, max_outputs=2)
 
         def leaky_relu(x, name="leaky_relu"):
             return utils.leaky_relu(x, alpha=0.2, name=name)
@@ -689,8 +689,8 @@ class WassersteinACGAN(ACGAN):
 
     def _gan_loss(self, logits_src_real, logits_src_fake, logits_cls_real, logits_cls_fake, feature_src_real, feature_src_fake, input_labels, use_features=False):
         discriminator_loss_src = tf.reduce_mean(logits_src_real) - tf.reduce_mean(logits_src_fake)
-        discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
-        discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
+        discriminator_loss_cls_real = self._cross_entropy_loss(logits=logits_cls_real, labels=input_labels, name='disc_loss_cls_real')
+        discriminator_loss_cls_fake = self._cross_entropy_loss(logits=logits_cls_fake, labels=input_labels, name='disc_loss_cls_fake')
         discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
         self.discriminator_loss = discriminator_loss_src + discriminator_loss_cls
 
