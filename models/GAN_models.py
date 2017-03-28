@@ -220,7 +220,7 @@ class GAN(object):
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.50)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.merge_all_summaries()
-        self.saver = tf.train.Saver(max_to_keep=iterations//5000)
+        self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
         self.summary_writer = tf.train.SummaryWriter(self.logs_dir, self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
