@@ -688,7 +688,7 @@ class WassersteinACGAN(ACGAN):
         return None, tf.nn.sigmoid(h_pred_cls), h_pred_src, h_pred_cls, h
 
     def _gan_loss(self, logits_src_real, logits_src_fake, logits_cls_real, logits_cls_fake, feature_src_real, feature_src_fake, input_labels, use_features=False):
-        discriminator_loss_src = tf.reduce_mean(logits_src_real - logits_src_fake)
+        discriminator_loss_src = tf.reduce_mean(logits_src_real) - tf.reduce_mean(logits_src_fake)
         discriminator_loss_cls_real = self._cross_entropy_loss(logits_cls_real, input_labels, name='disc_loss_cls_real')
         discriminator_loss_cls_fake = self._cross_entropy_loss(logits_cls_fake, input_labels, name='disc_loss_cls_fake')
         discriminator_loss_cls = discriminator_loss_cls_real + discriminator_loss_cls_fake
