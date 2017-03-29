@@ -156,12 +156,12 @@ def batch_norm0(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0
         center=True, scale=True, updates_collections=None, scope=scope, reuse=True)
     return normed
 
-def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02, trainable=True):
+def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, trainable=True):
     with tf.variable_scope(scope):
-        gamma = tf.get_variable("gamma", trainable=trainable)
-        beta = tf.get_variable("beta", trainable=trainable)
-        moving_avg = tf.get_variable("moving_avg", trainable=False)
-        moving_var = tf.get_variable("moving_var", trainable=False)
+        gamma = tf.get_variable("gamma", shape=[n_out], initializer=tf.constant_initializer(1.0),, trainable=trainable)
+        beta = tf.get_variable("beta", shape=[n_out], initializer=tf.constant_initializer(0.0), trainable=trainable)
+        moving_avg = tf.get_variable("moving_avg", shape=[n_out], initializer=tf.constant_initializer(0.0), trainable=False)
+        moving_var = tf.get_variable("moving_var", shape=[n_out], initializer=tf.constant_initializer(1.0), trainable=False)
         shape = x.get_shape().as_list()
         control_inputs = []
         if phase_train:
