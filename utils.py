@@ -158,20 +158,23 @@ def batch_norm0(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0
 
 def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, trainable=True):
     with tf.variable_scope(scope):
-        gamma = tf.get_variable("gamma", shape=[n_out], initializer=tf.constant_initializer(1.0),, trainable=trainable)
+        gamma = tf.get_variable("gamma", shape=[n_out], initializer=tf.constant_initializer(1.0), trainable=trainable)
         beta = tf.get_variable("beta", shape=[n_out], initializer=tf.constant_initializer(0.0), trainable=trainable)
         moving_avg = tf.get_variable("moving_avg", shape=[n_out], initializer=tf.constant_initializer(0.0), trainable=False)
         moving_var = tf.get_variable("moving_var", shape=[n_out], initializer=tf.constant_initializer(1.0), trainable=False)
         shape = x.get_shape().as_list()
-        control_inputs = []
-        if phase_train:
-            avg, var = tf.nn.moments(input, range(len(shape)-1))
+
+        def update_stats():
+            avg, var = tf.nn.moments(x, range(len(shape)-1))
             update_moving_avg = moving_averages.assign_moving_average(moving_avg, avg, decay)
             update_moving_var = moving_averages.assign_moving_average(moving_var, var, decay)
             control_inputs = [update_moving_avg, update_moving_var]
-        else:
-            avg = moving_avg
-            var = moving_var
+            return avg, var, control_inputs
+
+        avg, var, control_inputs = tf.cond(phase_train,
+                                    update_stats,
+                                    lambda: (avg, var, []))
+        
         with tf.control_dependencies(control_inputs):
             normed = tf.nn.batch_normalization(x, avg, var, offset=beta, scale=gamma, variance_epsilon=eps)
     return normed
