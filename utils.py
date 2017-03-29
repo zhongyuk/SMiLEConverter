@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
+from tensorflow.python.training import moving_averages
 
 def maybe_download_and_extract(dir_path, url_name, is_tarfile=False, is_zipfile=False):
     if not os.path.exists(dir_path):
@@ -64,20 +65,20 @@ def weight_variable_xavier_initialized(shape, constant=1, name=None):
     return weight_variable(shape, stddev=stddev, name=name)
 
 
-def weight_variable(shape, stddev=0.02, name=None):
+def weight_variable(shape, stddev=0.02, name=None,  trainable=True):
     initial = tf.truncated_normal(shape, stddev=stddev)
     if name is None:
-        return tf.Variable(initial)
+        return tf.Variable(initial, trainable=trainable)
     else:
-        return tf.get_variable(name, initializer=initial)
+        return tf.get_variable(name, initializer=initial, trainable=trainable)
 
 
-def bias_variable(shape, name=None):
+def bias_variable(shape, name=None, trainable=True):
     initial = tf.constant(0.0, shape=shape)
     if name is None:
-        return tf.Variable(initial)
+        return tf.Variable(initial, trainable=True)
     else:
-        return tf.get_variable(name, initializer=initial)
+        return tf.get_variable(name, initializer=initial, trainable=True)
 
 
 def get_tensor_size(tensor):
@@ -150,9 +151,29 @@ def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.
     return normed
 
 '''
-def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
+def batch_norm0(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
     normed = tf.contrib.layers.batch_norm(x, decay=decay, is_training=phase_train, 
         center=True, scale=True, updates_collections=None, scope=scope, reuse=True)
+    return normed
+
+def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02, trainable=True):
+    with tf.variable_scope(scope):
+        gamma = tf.get_variable("gamma", trainable=trainable)
+        beta = tf.get_variable("beta", trainable=trainable)
+        moving_avg = tf.get_variable("moving_avg", trainable=False)
+        moving_var = tf.get_variable("moving_var", trainable=False)
+        shape = x.get_shape().as_list()
+        control_inputs = []
+        if phase_train:
+            avg, var = tf.nn.moments(input, range(len(shape)-1))
+            update_moving_avg = moving_averages.assign_moving_average(moving_avg, avg, decay)
+            update_moving_var = moving_averages.assign_moving_average(moving_var, var, decay)
+            control_inputs = [update_moving_avg, update_moving_var]
+        else:
+            avg = moving_avg
+            var = moving_var
+        with tf.control_dependencies(control_inputs):
+            normed = tf.nn.batch_normalization(x, avg, var, offset=beta, scale=gamma, variance_epsilon=eps)
     return normed
 
 
