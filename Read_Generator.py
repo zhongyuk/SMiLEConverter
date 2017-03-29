@@ -12,7 +12,7 @@ def extract_generator(ckpt_fn):
 	gen_vars = {}
 	with tf.Session() as sess:
 		saver = tf.train.import_meta_graph(ckpt_fn + ".meta")
-		saver.restore(sess, "./"+ckpt_fn)
+		saver.restore(sess, ckpt_fn)
 		all_vars = tf.global_variables()
 		for var in all_vars:
 			if var.name.startswith("generator"):
@@ -25,12 +25,13 @@ def extract_generator(ckpt_fn):
 	print("Done pickling...")
 	return gen_vars
 
-def load_generator(logs_dir, num_iter, ckpt_bname='model-ckpt-'):
-	pickle_filepath = logs_dir + "generator-" + str(num_iter)
+def load_generator(logs_dir, num_iter, ckpt_bname='model.ckpt-'):
+	dir_path = os.getcwd()
+	pickle_filepath = dir_path + logs_dir + "generator-" + str(num_iter)
 	if not os.path.exists(pickle_filepath):
 		print("Extract generator from model ckpt...")
-		ckpt_fn = logs_dir + ckpt_bname + str(num_iter)
-		if not os.path.exists(ckpt_fn):
+		ckpt_fn = dir_path + logs_dir + ckpt_bname + str(num_iter)
+		if not os.path.exists(ckpt_fn+'.meta'):
 			raise ValueError("Model ckpt not found")
 		gen_params = extract_generator(ckpt_fn)
 	else:
