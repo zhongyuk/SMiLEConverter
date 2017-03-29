@@ -8,7 +8,7 @@ class Generator_Params():
 	def __init__(self, gen_params):
 		self.gen_params = gen_params
 
-def extract_generator(ckpt_fn):
+def extract_generator(save_dir, ckpt_fn):
 	gen_vars = {}
 	with tf.Session() as sess:
 		saver = tf.train.import_meta_graph(ckpt_fn + ".meta")
@@ -18,7 +18,7 @@ def extract_generator(ckpt_fn):
 			if var.name.startswith("generator"):
 				gen_vars[var.name] = var.eval()
 	ckpt_lst = ckpt_fn.split('-')
-	gen_fn = 'generator-'+ckpt_lst[-1]
+	gen_fn = save_dir + 'generator-'+ckpt_lst[-1]
 	print("Pickling...")
 	with open(gen_fn, 'wb') as f:
 		pickle.dump(gen_vars, f, pickle.HIGHEST_PROTOCOL)
@@ -33,7 +33,7 @@ def load_generator(logs_dir, num_iter, ckpt_bname='model.ckpt-'):
 		ckpt_fn = dir_path + logs_dir + ckpt_bname + str(num_iter)
 		if not os.path.exists(ckpt_fn+'.meta'):
 			raise ValueError("Model ckpt not found")
-		gen_params = extract_generator(ckpt_fn)
+		gen_params = extract_generator(dir_path+logs_dir, ckpt_fn)
 	else:
 		print("Found pickle file")
 		with open(pickle_filepath, 'rb') as f:
