@@ -123,7 +123,7 @@ def avg_pool_2x2(x):
 def local_response_norm(x):
     return tf.nn.lrn(x, depth_radius=5, bias=2, alpha=1e-4, beta=0.75)
 
-
+'''
 def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
     """
     Code taken from http://stackoverflow.com/a/34634291/2267819
@@ -147,6 +147,12 @@ def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.
                             mean_var_with_update,
                             lambda: (ema.average(batch_mean), ema.average(batch_var)))
         normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, eps)
+    return normed
+
+'''
+def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
+    normed = tf.contrib.layers.batch_norm(x, decay=decay, is_training=phase_train, 
+        center=True, scale=True, update_collections=None, scope=scope, reuse=True)
     return normed
 
 
