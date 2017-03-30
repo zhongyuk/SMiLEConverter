@@ -152,7 +152,7 @@ def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.
 '''
 def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
     normed = tf.contrib.layers.batch_norm(x, decay=decay, is_training=phase_train, 
-        center=True, scale=True, update_collections=None, scope=scope, reuse=True)
+        center=True, scale=True, updates_collections=None, scope=scope, reuse=True)
     return normed
 
 
