@@ -143,7 +143,7 @@ class Encoder_Network(object):
         	h_bnz_var = tf.Variable(initial_value=gen_params[scope_name+'/gen_bnz/moving_variance:0'], name='gen_bnz/moving_variance', trainable=False)
         	h_bnz_beta = tf.Variable(initial_value=gen_params[scope_name+'/gen_bnz/beta:0'], name='gen_bnz/beta', trainable=False)
         	h_bnz_gamma = tf.Variable(initial_value=gen_params[scope_name+'/gen_bnz/gamma:0'], name='gen_bnz/gamma', trainable=False)
-        	h_bnz = tf.nn.batch_normalization(h_z, h_bnz_avg, h_bnz_var, h_bnz_beta, h_bnz_gamma, decay=0.9, variance_epsilon=0.001)
+        	h_bnz = tf.nn.batch_normalization(h_z, h_bnz_avg, h_bnz_var, h_bnz_beta, h_bnz_gamma, variance_epsilon=0.001)
         	h = activation(h_bnz, name='h_z')
         	utils.add_activation_summary(h)
 
@@ -164,7 +164,7 @@ class Encoder_Network(object):
         		bn_var = tf.Variable(initial_value=gen_params[bn_var_name], name='gen_bn'+str(index)+'/moving_variance', trainable=False)
         		bn_beta = tf.Variable(initial_value=gen_params[bn_beta_name], name='gen_bn'+str(index)+'/beta', trainable=False)
         		bn_gamma = tf.Variable(initial_value=gen_params[bn_gamma_name], name='gen_bn'+str(index)+'/gamma', trainable=False)
-        		h_bn = tf.nn.batch_normalization(h_conv_t, bn_avg, bn_var, bn_beta, bn_gamma, decay=0.9, variance_epsilon=0.001)
+        		h_bn = tf.nn.batch_normalization(h_conv_t, bn_avg, bn_var, bn_beta, bn_gamma, variance_epsilon=0.001)
         		h = activation(h_bn, name='h_%d'%index)
         		utils.add_activation_summary(h)
 
