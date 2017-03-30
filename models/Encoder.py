@@ -75,9 +75,9 @@ class Encoder_Network(object):
         else:
             raise ValueError("Unknown optimizer %s" % optimizer_name)
 
-    def _train(self, loss, var_list, optimzier):
+    def _train(self, loss, var_list, optimizer):
     	grads = optimizer.compute_gradients(loss, var_list=var_list)
-    	for grad, var in gards:
+    	for grad, var in grads:
     		utils.add_gradient_summary(grad, var)
     	return optimizer.apply_gradients(grads)
 
@@ -189,7 +189,7 @@ class Encoder_Network(object):
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
         self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
-        self.summary_writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
+        self.summary_writer = tf.summary.FileWriter('logs/new_log/', self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
@@ -217,11 +217,11 @@ class Encoder_Network(object):
     	self._encoder_loss()
 
     	self.train_variables = tf.trainable_variables()
-    	for v in train_variables:
+    	for v in self.train_variables:
     		utils.add_to_regularization_and_summary(var=v)
 
     	optim = self._get_optimizer(optimizer, learning_rate, optimizer_param)
-    	self.encoder_train_op = self._train(self.loss, self.train_variables)
+    	self.encoder_train_op = self._train(self.loss, self.train_variables, optim)
 
     def train_model(self, max_iterations):
     	try:
