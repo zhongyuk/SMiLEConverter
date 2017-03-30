@@ -21,6 +21,7 @@ tf.flags.DEFINE_string("optimizer", "Adam", "Optimizer to use for training")
 tf.flags.DEFINE_integer("gen_dimension", "32", "dimension of first layer in generator") #defualt 16
 tf.flags.DEFINE_string("mode", "train", "train / visualize model")
 tf.flags.DEFINE_integer("num_cls", "2", "number of classes")
+tf.flags.DEFINE_integer("num_iter", "50", "iteration specifying ACGAN model ckpt")
 
 
 def main(argv=None):
@@ -31,7 +32,7 @@ def main(argv=None):
     crop_image_size, resized_image_size = map(int, FLAGS.image_size.split(','))
     model = Encoder_Network(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)
 
-    model.create_network(generator_dims, encoder_dims, FLAGS.logs_dir, FLAGS.optimizer, FLAGS.learning_rate, FLAGS.optimizer_param)
+    model.create_network(generator_dims, encoder_dims, FLAGS.logs_dir, FLAGS.num_iter, FLAGS.optimizer, FLAGS.learning_rate, FLAGS.optimizer_param)
 
     model.initialize_network(FLAGS.iterations)
 

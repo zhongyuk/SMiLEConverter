@@ -105,24 +105,20 @@ class Encoder_Network(object):
 	    	W_z = utils.weight_variable([image_size*image_size*shape[3], dims[-1]], name="W_z")
 	    	b_z = utils.bias_variable([dims[-1]], name='b_z')
 	    	h_z = tf.matmul(h_reshaped, W_z) + b_z
-<<<<<<< HEAD
-
-=======
->>>>>>> cadcceabdf24f3056e542392d57e083ab4115fe8
         return tf.nn.sigmoid(h_z)
 
     def _load_generator_data(self, num_iter=50):
         gen_params = Read_Generator.load_generator(self.logs_dir, num_iter)
         return gen_params
 
-    def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
+    def _generator(self, z, dims, train_phase, num_iter, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
 
         input_labels = tf.cond(train_phase, lambda: self.labels, 
             lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
 
-        gen_params = self._load_generator_data(num_iter=50)
+        gen_params = self._load_generator_data(num_iter)
 
         with tf.name_scope(scope_name) as scope:
         	W_ebd = tf.Variable(initial_value=gen_params[scope_name+'/W_ebd:0'], name='W_ebd', trainable=False)
@@ -208,12 +204,12 @@ class Encoder_Network(object):
         self.coord = tf.train.Coordinator()
         self.threads = tf.train.start_queue_runners(self.sess, self.coord)
 
-    def create_network(self, generator_dims, encoder_dims, logs_dir, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
+    def create_network(self, generator_dims, encoder_dims, logs_dir, num_iter, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
         self.logs_dir = logs_dir 
-	self._setup_placeholder()	
-	self.z = self._encoder(encoder_dims, self.train_phase)
-    	self.gen_images = self._generator(self.z, generator_dims, self.train_phase)
+		self._setup_placeholder()	
+		self.z = self._encoder(encoder_dims, self.train_phase)
+    	self.gen_images = self._generator(self.z, generator_dims, self.train_phase, num_iter)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
     	tf.summary.image("image_generated", self.gen_images, max_outputs=4)
