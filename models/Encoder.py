@@ -207,8 +207,8 @@ class Encoder_Network(object):
     def create_network(self, generator_dims, encoder_dims, logs_dir, num_iter, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
         self.logs_dir = logs_dir 
-		self._setup_placeholder()	
-		self.z = self._encoder(encoder_dims, self.train_phase)
+	self._setup_placeholder()	
+	self.z = self._encoder(encoder_dims, self.train_phase)
     	self.gen_images = self._generator(self.z, generator_dims, self.train_phase, num_iter)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
@@ -242,14 +242,8 @@ class Encoder_Network(object):
                     print("Time: %g/itr, Step: %d, Encoder loss: %g" % (duration, itr, encoder_loss))
                     self.summary_writer.add_summary(summary_str, itr)
 
-<<<<<<< HEAD
-                if itr %5000 == 0:
-                    self.saver.save(self.sess, self.logs_dir + "encoder.ckpt", global_step=itr)
-=======
                 if itr %50 == 0:
                     self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
->>>>>>> cadcceabdf24f3056e542392d57e083ab4115fe8
-
         except tf.errors.OutOfRangeError:
             print('Done training -- epoch limit reached')
         except KeyboardInterrupt:
