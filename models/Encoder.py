@@ -189,7 +189,8 @@ class Encoder_Network(object):
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
         self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
-        self.summary_writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
+        #print(self.logs_dir) 
+	self.summary_writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer(), feed_dict = {self.train_phase: True})
         ckpt = tf.train.get_checkpoint_state(self.logs_dir)
@@ -207,8 +208,8 @@ class Encoder_Network(object):
     def create_network(self, generator_dims, encoder_dims, gen_logs_dir, num_iter, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
         self.gen_logs_dir = gen_logs_dir 
-		self._setup_placeholder()	
-		self.z = self._encoder(encoder_dims, self.train_phase)
+	self._setup_placeholder()	
+	self.z = self._encoder(encoder_dims, self.train_phase)
     	self.gen_images = self._generator(self.z, generator_dims, self.train_phase, num_iter)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
@@ -243,7 +244,7 @@ class Encoder_Network(object):
                     self.summary_writer.add_summary(summary_str, itr)
 
                 if itr %50 == 0:
-                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
+                    self.saver.save(self.sess, self.logs_dir + "encoder.ckpt", global_step=itr)
         except tf.errors.OutOfRangeError:
             print('Done training -- epoch limit reached')
         except KeyboardInterrupt:
