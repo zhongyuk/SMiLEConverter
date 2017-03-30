@@ -171,7 +171,7 @@ class Encoder_Network(object):
         	image_size *= 2
         	W_pred = tf.Variable(initial_value=gen_params[scope_name+'/W_pred:0'], name='W_pred', trainable=False)
         	b_pred = tf.Variable(initial_value=gen_params[scope_name+'/b_pred:0'], name='b_pred', trainable=False)
-        	deconv_shape = tf.stack([tf.shape(h)[0]], image_size, image_size, dims[-1])
+        	deconv_shape = tf.stack([tf.shape(h)[0], image_size, image_size, dims[-1]])
         	h_conv_t = utils.conv2d_transpose_strided(h, W_pred, b_pred, output_shape=deconv_shape)
         	pred_image = tf.nn.tanh(h_conv_t, name='pred_image')
         	utils.add_activation_summary(pred_image)
