@@ -10,8 +10,8 @@ from models.Encoder import *
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
-tf.flags.DEFINE_string("gen_logs_dir", "logs/CelebA_GAN_logs/", "path to generator logs directory")
-tf.flags.DEFINE_string("logs_dir", "encoder_logs/", "path to save encoder logs directory")
+tf.flags.DEFINE_string("gen_logs_dir", "/logs/exp/", "path to generator logs directory")
+tf.flags.DEFINE_string("logs_dir", "encoder_logs/exp/", "path to save encoder logs directory")
 tf.flags.DEFINE_string("data_dir", "/home/paperspace/Downloads/", "path to dataset")
 tf.flags.DEFINE_integer("z_dim", "100", "size of input vector to generator")
 tf.flags.DEFINE_float("learning_rate", "2e-4", "Learning rate for Adam Optimizer")
