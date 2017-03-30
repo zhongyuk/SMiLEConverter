@@ -59,8 +59,7 @@ class Encoder_Network(object):
         input_image, input_label = tf.train.batch([read_input.input_image, read_input.input_label],
                                      batch_size=self.batch_size,
                                      num_threads=num_preprocess_threads,
-                                     capacity=min_queue_examples + 2 * self.batch_size
-                                     )
+                                     capacity=min_queue_examples + 2 * self.batch_size)
         input_image = utils.process_image(input_image, 127.5, 127.5)
         input_label = tf.one_hot(input_label, self.num_cls)
         return input_image, input_label
@@ -106,13 +105,14 @@ class Encoder_Network(object):
 	    	W_z = utils.weight_variable([image_size*image_size*shape[3], dims[-1]], name="W_z")
 	    	b_z = utils.biase_variable([dims[-1]], name='b_z')
 	    	h_z = tf.matmul(h_reshaped, W_z) + b_z
-	    return tf.nn.sigmoid(h_z)
+
+        return tf.nn.sigmoid(h_z)
 
 	def _load_generator(self, num_iter=50):
 		gen_params = Read_Generator.load_generator(logs_dir, num_iter)
 		return gen_params
 
-	def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
+    def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
 
@@ -242,7 +242,7 @@ class Encoder_Network(object):
                     self.summary_writer.add_summary(summary_str, itr)
 
                 if itr %5000 == 0:
-                    self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
+                    self.saver.save(self.sess, self.logs_dir + "encoder.ckpt", global_step=itr)
 
         except tf.errors.OutOfRangeError:
             print('Done training -- epoch limit reached')
