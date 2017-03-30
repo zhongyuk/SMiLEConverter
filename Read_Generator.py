@@ -4,10 +4,6 @@ import numpy as np
 import os, sys, inspect
 from six.moves import cPickle as pickle
 
-class Generator_Params():
-	def __init__(self, gen_params):
-		self.gen_params = gen_params
-
 def extract_generator(save_dir, ckpt_fn):
 	gen_vars = {}
 	with tf.Session() as sess:
@@ -38,8 +34,7 @@ def load_generator(logs_dir, num_iter, ckpt_bname='model.ckpt-'):
 		print("Found pickle file")
 		with open(pickle_filepath, 'rb') as f:
 			gen_params = pickle.load(f)
-	generator = Generator_Params(gen_params) 
-	return generator
+	return gen_params
 
 if __name__ == '__main__':
 	logs_dir = '/logs/exp/'

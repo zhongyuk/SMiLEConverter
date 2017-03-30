@@ -31,9 +31,9 @@ def main(argv=None):
     crop_image_size, resized_image_size = map(int, FLAGS.image_size.split(','))
     model = Encoder_Network(FLAGS.z_dim, FLAGS.num_cls, crop_image_size, resized_image_size, FLAGS.batch_size, FLAGS.data_dir)
 
-    model.create_network(generator_dims, encoder_dims, FLAGS.optimizer, FLAGS.learning_rate, FLAGS.optimizer_param)
+    model.create_network(generator_dims, encoder_dims, FLAGS.logs_dir, FLAGS.optimizer, FLAGS.learning_rate, FLAGS.optimizer_param)
 
-    model.initialize_network(FLAGS.logs_dir, FLAGS.iterations)
+    model.initialize_network(FLAGS.iterations)
 
     if FLAGS.mode == "train":
         model.train_model(int(1 + FLAGS.iterations))

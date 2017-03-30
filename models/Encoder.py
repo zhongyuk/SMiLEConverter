@@ -89,7 +89,7 @@ class Encoder_Network(object):
     		skip_bn = True
     		for index in range(N-2):
     			W = utils.weight_variable([3, 3, dims[index], dims[index+1]], name="W_%d" % index)
-    			b = utils.bias_variable([dims[index+1]], name="b_%d" % index, trainable=trainable)
+    			b = utils.bias_variable([dims[index+1]], name="b_%d" % index)
     			h_conv = utils.conv2d_strided(h, W, b)
     			if skip_bn:
     				h_bn = h_conv
@@ -104,22 +104,22 @@ class Encoder_Network(object):
 	    	h_reshaped = tf.reshape(h, [self.batch_size, image_size*image_size*shape[3]])
 
 	    	W_z = utils.weight_variable([image_size*image_size*shape[3], dims[-1]], name="W_z")
-	    	b_z = utils.biase_variable([dims[-1]], name='b_z')
+	    	b_z = utils.bias_variable([dims[-1]], name='b_z')
 	    	h_z = tf.matmul(h_reshaped, W_z) + b_z
-	    return tf.nn.sigmoid(h_z)
+        return tf.nn.sigmoid(h_z)
 
-	def _load_generator(self, num_iter=50):
-		gen_params = Read_Generator.load_generator(logs_dir, num_iter)
-		return gen_params
+    def _load_generator_data(self, num_iter=50):
+        gen_params = Read_Generator.load_generator(self.logs_dir, num_iter)
+        return gen_params
 
-	def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
+    def _generator(self, z, dims, train_phase, activation=tf.nn.relu, scope_name="generator"):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
 
         input_labels = tf.cond(train_phase, lambda: self.labels, 
             lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
 
-        gen_params = self._load_generator(self.logs_dir)
+        gen_params = self._load_generator_data(num_iter=50)
 
         with tf.name_scope(scope_name) as scope:
         	W_ebd = tf.Variable(initial_value=gen_params[scope_name+'/W_ebd:0'], name='W_ebd', trainable=False)
@@ -183,10 +183,10 @@ class Encoder_Network(object):
     	self.loss = tf.reduce_mean(tf.square(tf.subtract(self.gen_images, self.images)))
     	tf.summary.scalar("Encoder_loss", self.loss)
 
-    def initialize_network(self, logs_dir, iterations):
+    def initialize_network(self, iterations):
         print("Initializing network...")
-        self.logs_dir = logs_dir
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.50)
+        #self.logs_dir = logs_dir
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
         self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
@@ -205,10 +205,12 @@ class Encoder_Network(object):
         self.coord = tf.train.Coordinator()
         self.threads = tf.train.start_queue_runners(self.sess, self.coord)
 
-    def create_network(self, generator_dims, encoder_dims, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
+    def create_network(self, generator_dims, encoder_dims, logs_dir, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
-    	self.z = self._encoder(encoder_dims, train_phase)
-    	self.gen_images = self._generator(self.z, generator_dims, train_phase)
+        self.logs_dir = logs_dir 
+	self._setup_placeholder()	
+	self.z = self._encoder(encoder_dims, self.train_phase)
+    	self.gen_images = self._generator(self.z, generator_dims, self.train_phase)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
     	tf.summary.image("image_generated", self.gen_images, max_outputs=4)
@@ -232,7 +234,7 @@ class Encoder_Network(object):
 
                 self.sess.run(self.encoder_train_op, feed_dict=feed_dict)
 
-                if itr % 200 == 0:
+                if itr % 2 == 0:
                     stop_time = time.time()
                     duration = (stop_time - start_time) / 200.
                     start_time = time.time()
@@ -241,7 +243,7 @@ class Encoder_Network(object):
                     print("Time: %g/itr, Step: %d, Encoder loss: %g" % (duration, itr, encoder_loss))
                     self.summary_writer.add_summary(summary_str, itr)
 
-                if itr %5000 == 0:
+                if itr %50 == 0:
                     self.saver.save(self.sess, self.logs_dir + "model.ckpt", global_step=itr)
 
         except tf.errors.OutOfRangeError:
