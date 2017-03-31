@@ -234,7 +234,7 @@ class Encoder_Network(object):
 
                 self.sess.run(self.encoder_train_op, feed_dict=feed_dict)
 
-                if itr % 2 == 0:
+                if itr % 200 == 0:
                     stop_time = time.time()
                     duration = (stop_time - start_time) / 200.
                     start_time = time.time()
@@ -243,7 +243,7 @@ class Encoder_Network(object):
                     print("Time: %g/itr, Step: %d, Encoder loss: %g" % (duration, itr, encoder_loss))
                     self.summary_writer.add_summary(summary_str, itr)
 
-                if itr %50 == 0:
+                if itr %1000 == 0:
                     self.saver.save(self.sess, self.logs_dir + "encoder.ckpt", global_step=itr)
         except tf.errors.OutOfRangeError:
             print('Done training -- epoch limit reached')

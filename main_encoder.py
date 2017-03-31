@@ -10,7 +10,7 @@ from models.Encoder import *
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer("batch_size", "64", "batch size for training")
-tf.flags.DEFINE_string("gen_logs_dir", "/logs/exp/", "path to generator logs directory")
+tf.flags.DEFINE_string("gen_logs_dir", "/gan_logs/acgan_l2/", "path to generator logs directory")
 tf.flags.DEFINE_string("logs_dir", "encoder_logs/exp/", "path to save encoder logs directory")
 tf.flags.DEFINE_string("data_dir", "/home/paperspace/Downloads/", "path to dataset")
 tf.flags.DEFINE_integer("z_dim", "100", "size of input vector to generator")
