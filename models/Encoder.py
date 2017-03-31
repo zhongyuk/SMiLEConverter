@@ -188,7 +188,7 @@ class Encoder_Network(object):
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
-        self.saver = tf.train.Saver(max_to_keep=int(iterations//5000))
+        self.saver = tf.train.Saver(max_to_keep=int(iterations//1000))
         #print(self.logs_dir) 
 	self.summary_writer = tf.summary.FileWriter(self.logs_dir, self.sess.graph)
 
