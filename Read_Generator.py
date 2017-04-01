@@ -12,7 +12,17 @@ def extract_generator(save_dir, ckpt_fn):
 		all_vars = tf.global_variables()
 		for var in all_vars:
 			if var.name.startswith("generator"):
-				gen_vars[var.name] = var.eval()
+				if var.name.endswith('ExponentialMovingAverage:0'):
+					name_list = var.name.split('/')
+					if name_list[-2]=="mean":
+						new_name = name_list[0]+'/'+name_list[1]+'/moving_mean:0'
+					elif name_list[-2]=='variance':
+						new_name = name_list[0]+'/'+name_list[1]+'/moving_variance:0'
+					else:
+						raise ValueError("Check generator namespaces!")
+					gen_vars[new_name] = var.eval()
+				else:
+					gen_vars[var.name] = var.eval()
 	ckpt_lst = ckpt_fn.split('-')
 	gen_fn = save_dir + 'generator-'+ckpt_lst[-1]
 	print("Pickling...")
