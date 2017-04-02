@@ -259,7 +259,7 @@ class Encoder_Network(object):
         feed_dict = {self.train_phase: False, self.class_num: -1}
         origin_images, gen_images = self.sess.run([self.images, self.gen_images], feed_dict=feed_dict)
         origin_images = utils.unprocess_image(origin_images, 127.5, 127.5).astype(np.uint8)
-        gen_images = utils.unprocess_image(origin_images, 127.5, 127.5).astype(np.uint8)
+        gen_images = utils.unprocess_image(gen_images, 127.5, 127.5).astype(np.uint8)
         shape = [2, 2]
         save_img_fn = "encoder_"+str(int(iterations))+'.png'
         utils.save_encoder_img(origin_images, gen_images, self.logs_dir, save_img_fn, shape=shape)
