@@ -25,6 +25,7 @@ tf.flags.DEFINE_integer("gen_dimension", "32", "dimension of first layer in gene
 tf.flags.DEFINE_string("mode", "train", "train / visualize model")
 tf.flags.DEFINE_integer("num_cls", "2", "number of classes for ACGAN")
 tf.flags.DEFINE_boolean("feature_matching", "True", "use improved gan loss/feature matching or not")
+tf.flags.DEFINE_string("visualize_shape", "4,16", "Grid shape for visualize model")
 
 
 def main(argv=None):
@@ -55,7 +56,9 @@ def main(argv=None):
     if FLAGS.mode == "train":
         model.train_model(int(1 + FLAGS.iterations))
     elif FLAGS.mode == "visualize":
-        model.visualize_model(FLAGS.iterations)
+        visualize_shape_dims = FLAGS.visualize_shape.split(',')
+        shape = [int(visualize_shape_dims[0]), int(visualize_shape_dims[1])]
+        model.visualize_model(FLAGS.iterations, shape=shape)
 
 
 if __name__ == "__main__":

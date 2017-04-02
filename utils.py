@@ -202,8 +202,9 @@ def save_encoder_img(origin_images, gen_images, logs_dir, filename, shape=[2, 2]
     for i in trange(size, desc="Saving images"):
         grid[i].axis('off')
         if i%2==0:
-            grid[i].imshow(origin_images[i])
+            img_i = i
+            grid[i].imshow(origin_images[img_i])
         else:
-            grid[i].imshow(gen_images[i])
+            grid[i].imshow(gen_images[img_i])
 
     plt.savefig(os.path.join(logs_dir, filename))
