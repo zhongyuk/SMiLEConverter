@@ -180,7 +180,8 @@ class Encoder_Network(object):
         return pred_image#, input_labels
 
     def _encoder_loss(self):
-    	self.loss = tf.reduce_mean(tf.square(tf.subtract(self.gen_images, self.images)))
+    	#self.loss = tf.reduce_mean(tf.square(tf.subtract(self.gen_images, self.images)))
+    	self.loss = tf.reduce_mean(tf.abs(self.gen_images - self.images))
     	tf.summary.scalar("Encoder_loss", self.loss)
 
     def initialize_network(self, logs_dir, iterations):
