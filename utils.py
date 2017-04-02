@@ -193,3 +193,17 @@ def save_imshow_grid(images, logs_dir, filename, shape):
         grid[i].imshow(images[i])
 
     plt.savefig(os.path.join(logs_dir, filename))
+
+def save_encoder_img(origin_images, gen_images, logs_dir, filename, shape=[2, 2]):
+    fig = plt.figure(1)
+    grid = ImageGrid(fig, 111, nrows_ncols=shape, axes_pad = 0.05)
+
+    size = shape[0] * shape[1]
+    for i in trange(size, desc="Saving images"):
+        grid[i].axis('off')
+        if i%2==0:
+            grid[i].imshow(origin_images[i])
+        else:
+            grid[i].imshow(gen_images[i])
+
+    plt.savefig(os.path.join(logs_dir, filename))

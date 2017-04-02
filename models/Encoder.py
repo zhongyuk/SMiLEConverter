@@ -115,8 +115,9 @@ class Encoder_Network(object):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
 
-        input_labels = tf.cond(train_phase, lambda: self.labels, 
-            lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
+        #input_labels = tf.cond(train_phase, lambda: self.labels, 
+            #lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
+        input_labels = self.labels
 
         gen_params = self._load_generator_data(num_iter)
 
@@ -185,7 +186,7 @@ class Encoder_Network(object):
     def initialize_network(self, logs_dir, iterations):
         print("Initializing network...")
         self.logs_dir = logs_dir
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1.0)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=.5)
         self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         self.summary_op = tf.summary.merge_all()
         self.saver = tf.train.Saver(max_to_keep=int(iterations//1000))
@@ -255,5 +256,11 @@ class Encoder_Network(object):
 
     def visualize_model(self, iterations):
         print("Sampling images from model...")
-        feed_dict = {self.train_phase: False}
+        feed_dict = {self.train_phase: False, self.class_num=-1}
+        origin_images, gen_images = self.sess.run([self.images, self.gen_images], feed_dict=feed_dict)
+        origin_images = utils.unprocess_image(origin_images, 127.5, 127.5).astype(np.uint8)
+        gen_images = utils.unprocess_image(origin_images, 127.5, 127.5).astype(np.uint8)
+        shape = [2, 2]
+        save_img_fn = "encoder_"+str(int(iterations))+'.png'
+        utils.save_encoder_img(origin_images, gen_images, self.logs_dir, save_img_fn, shape=shape)
 
