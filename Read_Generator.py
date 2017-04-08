@@ -47,7 +47,6 @@ def load_generator(logs_dir, num_iter, ckpt_bname='model.ckpt-'):
 	return gen_params
 
 if __name__ == '__main__':
-	logs_dir = '/logs/exp/'
-	num_iter = 100
+	logs_dir = '/logs/acgan_l2/'
+	num_iter = 40000
 	g = load_generator(logs_dir, num_iter)
-	g = load_generator(logs_dir, 50)
