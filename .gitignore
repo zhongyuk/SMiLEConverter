@@ -2,3 +2,7 @@
 *.DS_Store
 logs/*
 .ipynb_checkpoints*
+*.png
+encoder_logs/*
+gan_logs/*
+test_queue.py

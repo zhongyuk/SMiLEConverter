@@ -115,9 +115,8 @@ class Encoder_Network(object):
         N = len(dims)
         image_size = self.resized_image_size // (2 ** (N - 1))
 
-        #input_labels = tf.cond(train_phase, lambda: self.labels, 
-            #lambda: tf.one_hot(self.class_num*tf.ones(shape=self.batch_size, dtype=tf.int32), self.num_cls))
-        input_labels = self.labels
+        input_labels = tf.cond(train_phase, lambda: self.labels, 
+            lambda: tf.stack([self.labels[:, 1], self.labels[:, 0]], axis=1)) # translate expression
 
         gen_params = self._load_generator_data(num_iter)
 
@@ -210,8 +209,8 @@ class Encoder_Network(object):
     def create_network(self, generator_dims, encoder_dims, gen_logs_dir, num_iter, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
         self.gen_logs_dir = gen_logs_dir 
-	self._setup_placeholder()	
-	self.z = self._encoder(encoder_dims, self.train_phase)
+		self._setup_placeholder()	
+		self.z = self._encoder(encoder_dims, self.train_phase)
     	self.gen_images = self._generator(self.z, generator_dims, self.train_phase, num_iter)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
