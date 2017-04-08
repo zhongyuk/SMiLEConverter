@@ -209,8 +209,8 @@ class Encoder_Network(object):
     def create_network(self, generator_dims, encoder_dims, gen_logs_dir, num_iter, optimizer="Adam", learning_rate=2e-4, optimizer_param=0.9):
     	print("Setting up model...")
         self.gen_logs_dir = gen_logs_dir 
-		self._setup_placeholder()	
-		self.z = self._encoder(encoder_dims, self.train_phase)
+	self._setup_placeholder()	
+	self.z = self._encoder(encoder_dims, self.train_phase)
     	self.gen_images = self._generator(self.z, generator_dims, self.train_phase, num_iter)
 
     	tf.summary.image("image_real", self.images, max_outputs=4)
