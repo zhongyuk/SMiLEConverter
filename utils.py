@@ -152,6 +152,7 @@ def batch_norm(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.
 
 
 def batch_norm_tf(x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
+    __author__ = 'zhongyu kuang'
     normed = tf.contrib.layers.batch_norm(x, decay=decay, is_training=phase_train, 
         center=True, scale=True, updates_collections=None, scope=scope, reuse=True)
     return normed
@@ -195,6 +196,7 @@ def save_imshow_grid(images, logs_dir, filename, shape):
     plt.savefig(os.path.join(logs_dir, filename))
 
 def save_encoder_img(origin_images, gen_images, logs_dir, filename, shape=[2, 2]):
+    __author__ = 'zhongyu kuang'
     fig = plt.figure(1)
     grid = ImageGrid(fig, 111, nrows_ncols=shape, axes_pad = 0.05)
 
